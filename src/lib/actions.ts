@@ -95,18 +95,37 @@ export async function sendPostByEmail(
     },
   });
 
-  const isDataUrl = post.imageUrl && post.imageUrl.startsWith('data:image');
   let imageUrlDisplayHtml = '';
   let imageTagHtml = '';
+  const attachments: nodemailer.Attachment[] = [];
+  const imageCID = 'postimage@kozmos.curator'; // Benzersiz bir CID
 
   if (post.imageUrl) {
+    const isDataUrl = post.imageUrl.startsWith('data:image');
     if (isDataUrl) {
       imageUrlDisplayHtml = `<p><strong>Resim:</strong> E-postaya gömülü (aşağıda)</p>`;
+      
+      let extension = 'png'; // Varsayılan uzantı
+      const mimeTypeMatch = post.imageUrl.match(/data:(image\/[^;]+);base64,/);
+      if (mimeTypeMatch && mimeTypeMatch[1]) {
+          const mimeType = mimeTypeMatch[1];
+          if (mimeType === 'image/jpeg') extension = 'jpg';
+          else if (mimeType === 'image/png') extension = 'png';
+          else if (mimeType === 'image/gif') extension = 'gif';
+          // Gerekirse daha fazla MIME türü eklenebilir
+      }
+
+      attachments.push({
+        filename: `post_image.${extension}`, // Dinamik dosya adı
+        path: post.imageUrl, // Veri URI'si doğrudan path olarak verilebilir
+        cid: imageCID // Content-ID
+      });
+      imageTagHtml = `<p><img src="cid:${imageCID}" alt="Yapay Zeka Tarafından Üretilen Resim" style="max-width: 500px; height: auto; border: 1px solid #ddd; border-radius: 4px; padding: 5px;" /></p>`;
     } else {
-      // Assume it's a public URL
+      // Normal bir URL ise
       imageUrlDisplayHtml = `<p><strong>Resim URL'si:</strong> <a href="${post.imageUrl}" target="_blank" rel="noopener noreferrer">${post.imageUrl}</a></p>`;
+      imageTagHtml = `<p><img src="${post.imageUrl}" alt="Yapay Zeka Tarafından Üretilen Resim" style="max-width: 500px; height: auto; border: 1px solid #ddd; border-radius: 4px; padding: 5px;" /></p>`;
     }
-    imageTagHtml = `<p><img src="${post.imageUrl}" alt="Yapay Zeka Tarafından Üretilen Resim" style="max-width: 500px; height: auto; border: 1px solid #ddd; border-radius: 4px; padding: 5px;" /></p>`;
   } else {
     imageUrlDisplayHtml = `<p><strong>Resim:</strong> Yok</p>`;
   }
@@ -129,11 +148,12 @@ export async function sendPostByEmail(
     <p>İyi çalışmalar!</p>
   `;
 
-  const mailOptions = {
+  const mailOptions: nodemailer.SendMailOptions = {
     from: `"Kozmos Küratörü Asistanı" <${senderEmail}>`,
     to: recipientEmail,
     subject: emailSubject,
     html: emailHtml,
+    attachments: attachments.length > 0 ? attachments : undefined,
   };
 
   try {
@@ -198,48 +218,40 @@ export async function disconnectFromInstagramAction(): Promise<{success: boolean
 }
 
 export async function sharePostToInstagramAction(post: Post, accessToken?: string): Promise<{success: boolean; message: string}> {
-  console.log(`[sharePostToInstagramAction] FONKSIYON ÇAĞRILDI (Simülasyon). Konu: ${post.topic}`);
+  console.log(`[sharePostToInstagramAction] FONKSIYON ÇAĞRILDI. Konu: ${post.topic}`);
 
   if (!accessToken) {
     const errorMessage = 'Instagram\'a paylaşım yapılamadı: Erişim belirteci bulunamadı. Lütfen Ayarlar sayfasından Instagram hesabınızı bağlayın (belirtecinizi girin).';
     console.error('[sharePostToInstagramAction] HATA:', errorMessage);
-    return {success: false, message: errorMessage};
+    return { success: false, message: errorMessage };
   }
 
-  console.log(`[sharePostToInstagramAction] SİMÜLASYON: "${post.topic}" konulu gönderi, "${accessToken.substring(0,15)}..." erişim belirteci ile Instagram'a paylaşılıyor...`);
-  console.log(`[sharePostToInstagramAction] Gönderi Detayları (Simülasyon):`);
+  console.log(`[sharePostToInstagramAction] Belirteç ile API çağrısı denenecek: ${accessToken.substring(0,15)}...`);
+  console.log(`[sharePostToInstagramAction] Gönderi Detayları:`);
   console.log(`[sharePostToInstagramAction] > Resim URL: ${post.imageUrl}`);
   console.log(`[sharePostToInstagramAction] > Başlık: ${post.caption}`);
   console.log(`[sharePostToInstagramAction] > Hashtag'ler: ${post.hashtags.join(', ')}`);
   
-  // ------ GERÇEK API ÇAĞRISI DENEMESİ (ÇOK ÖNEMLİ UYARILARLA) ------
-  // UYARI: Bu bölüm, üretim ortamları için KESİNLİKLE GÜVENLİ DEĞİLDİR.
-  // Erişim belirteçleri sunucu tarafında güvenli bir şekilde yönetilmelidir.
-  // Ayrıca, Instagram API'si data URI'lerini doğrudan kabul etmez, imageUrl'in
-  // herkese açık bir URL olması gerekir. Bu sadece bir test denemesidir.
-
   const isDataUrlImage = post.imageUrl.startsWith('data:image');
   if (isDataUrlImage) {
-      const warningMessage = 'UYARI (GERÇEK API DENEMESİ): Resim URL\'si bir veri URI\'si. Instagram API bu formatı doğrudan kabul etmeyebilir ve "image_url" için herkese açık bir URL bekler. Bu API çağrısı büyük ihtimalle başarısız olacaktır.';
-      console.warn(warningMessage);
-      // Bu uyarıyı kullanıcıya da göstermek isteyebilirsiniz, ancak şimdilik sadece konsola yazıyoruz.
+      const warningMessage = 'UYARI: Resim URL\'si bir veri URI\'si. Instagram API bu formatı doğrudan kabul etmeyebilir ve "image_url" için herkese açık bir URL bekler. Bu API çağrısı büyük ihtimalle başarısız olacaktır.';
+      console.warn(`[sharePostToInstagramAction] ${warningMessage}`);
+      // Kullanıcıya da bu uyarıyı göstermek faydalı olabilir.
+      // return { success: false, message: warningMessage }; // İsteğe bağlı olarak burada kesilebilir.
   }
 
   try {
-    // Adım 1: Medya konteyneri oluştur
-    // Instagram Graph API, önce bir medya konteyneri oluşturmanızı, ardından bu konteyneri yayınlamanızı ister.
-    // https://developers.facebook.com/docs/instagram-api/reference/ig-user/media
-    // Bu örnekte sadece resimler için (video değil) ve carousel olmayan tek bir gönderi varsayılıyor.
-    
     const instagramUserId = "me"; // Genellikle "me" veya Instagram Kullanıcı ID'si
     const mediaContainerUrl = `https://graph.facebook.com/v19.0/${instagramUserId}/media`;
     
     const mediaContainerParams = new URLSearchParams();
-    mediaContainerParams.append('image_url', post.imageUrl); // BURASI EN KRİTİK NOKTA: Herkese açık URL olmalı!
+    // UYARI: Instagram API'si data URI'lerini 'image_url' için genellikle kabul etmez.
+    // Bu parametre, herkese açık bir URL olmalıdır.
+    mediaContainerParams.append('image_url', post.imageUrl); 
     mediaContainerParams.append('caption', `${post.caption}\n\n#${post.hashtags.join(' #')}`);
     mediaContainerParams.append('access_token', accessToken);
 
-    console.log(`[sharePostToInstagramAction] GERÇEK API DENEMESİ: Medya konteyneri oluşturuluyor... URL: ${mediaContainerUrl}, Params: ${mediaContainerParams.toString()}`);
+    console.log(`[sharePostToInstagramAction] Medya konteyneri oluşturuluyor... URL: ${mediaContainerUrl}`);
 
     const mediaResponse = await fetch(mediaContainerUrl, {
       method: 'POST',
@@ -249,22 +261,21 @@ export async function sharePostToInstagramAction(post: Post, accessToken?: strin
     const mediaResult = await mediaResponse.json();
 
     if (!mediaResponse.ok || !mediaResult.id) {
-      console.error('[sharePostToInstagramAction] GERÇEK API DENEMESİ HATA (Medya Konteyneri):', mediaResult);
-      const errorMessage = `Instagram'a gönderi paylaşılamadı (Medya Konteyneri Hatası): ${mediaResult.error?.message || `HTTP ${mediaResponse.status}`}. Resim URL'sinin herkese açık ve geçerli olduğundan emin olun. Detaylar için sunucu loglarını (terminal) kontrol edin.`;
-      return { success: false, message: errorMessage };
+      console.error('[sharePostToInstagramAction] HATA (Medya Konteyneri):', mediaResult);
+      const apiErrorMessage = mediaResult.error?.message || `HTTP ${mediaResponse.status}`;
+      const userMessage = `Instagram\'a gönderi paylaşılamadı (Medya Konteyneri Hatası): ${apiErrorMessage}. Resim URL\'sinin herkese açık ve geçerli olduğundan emin olun. Detaylar için sunucu loglarını (terminal) kontrol edin.`;
+      return { success: false, message: userMessage };
     }
 
     const mediaContainerId = mediaResult.id;
-    console.log(`[sharePostToInstagramAction] GERÇEK API DENEMESİ: Medya konteyneri oluşturuldu. ID: ${mediaContainerId}`);
+    console.log(`[sharePostToInstagramAction] Medya konteyneri oluşturuldu. ID: ${mediaContainerId}`);
 
-    // Adım 2: Medya konteynerini yayınla
-    // https://developers.facebook.com/docs/instagram-api/reference/ig-user/media_publish
     const publishUrl = `https://graph.facebook.com/v19.0/${instagramUserId}/media_publish`;
     const publishParams = new URLSearchParams();
     publishParams.append('creation_id', mediaContainerId);
     publishParams.append('access_token', accessToken);
 
-    console.log(`[sharePostToInstagramAction] GERÇEK API DENEMESİ: Medya yayınlanıyor... URL: ${publishUrl}, Params: ${publishParams.toString()}`);
+    console.log(`[sharePostToInstagramAction] Medya yayınlanıyor... URL: ${publishUrl}`);
     
     const publishResponse = await fetch(publishUrl, {
       method: 'POST',
@@ -274,18 +285,20 @@ export async function sharePostToInstagramAction(post: Post, accessToken?: strin
     const publishResult = await publishResponse.json();
 
     if (!publishResponse.ok || !publishResult.id) {
-      console.error('[sharePostToInstagramAction] GERÇEK API DENEMESİ HATA (Yayınlama):', publishResult);
-      const errorMessage = `Instagram'a gönderi paylaşılamadı (Yayınlama Hatası): ${publishResult.error?.message || `HTTP ${publishResponse.status}`}. Detaylar için sunucu loglarını (terminal) kontrol edin.`;
-      return { success: false, message: errorMessage };
+      console.error('[sharePostToInstagramAction] HATA (Yayınlama):', publishResult);
+      const apiErrorMessage = publishResult.error?.message || `HTTP ${publishResponse.status}`;
+      const userMessage = `Instagram'a gönderi paylaşılamadı (Yayınlama Hatası): ${apiErrorMessage}. Detaylar için sunucu loglarını (terminal) kontrol edin.`;
+      return { success: false, message: userMessage };
     }
     
-    console.log(`[sharePostToInstagramAction] GERÇEK API DENEMESİ: Gönderi başarıyla Instagram'da yayınlandı! ID: ${publishResult.id}`);
-    return { success: true, message: `Gönderi başarıyla Instagram'da yayınlandı (GERÇEK API DENEMESİ)! Yayın ID: ${publishResult.id}. Lütfen Instagram hesabınızı kontrol edin.` };
+    console.log(`[sharePostToInstagramAction] Gönderi başarıyla Instagram'da yayınlandı! ID: ${publishResult.id}`);
+    return { success: true, message: `Gönderi başarıyla Instagram'da yayınlandı! Yayın ID: ${publishResult.id}. Lütfen Instagram hesabınızı kontrol edin.` };
 
   } catch (error) {
-    console.error('[sharePostToInstagramAction] GERÇEK API DENEMESİ KRİTİK HATA:', error);
+    console.error('[sharePostToInstagramAction] KRİTİK HATA:', error);
     const errorMessage = error instanceof Error ? error.message : 'Bilinmeyen bir hata oluştu.';
-    return { success: false, message: `Instagram'a gönderi paylaşılırken kritik bir hata oluştu (GERÇEK API DENEMESİ): ${errorMessage}. Detaylar için sunucu loglarını (terminal) kontrol edin.` };
+    return { success: false, message: `Instagram'a gönderi paylaşılırken kritik bir hata oluştu: ${errorMessage}. Detaylar için sunucu loglarını (terminal) kontrol edin.` };
   }
-  // ------ GERÇEK API ÇAĞRISI DENEMESİ SONU ------
 }
+
+    
