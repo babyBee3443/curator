@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { CalendarDays, Hash, Image as ImageIcon, Loader2 } from 'lucide-react';
+import { CalendarDays, Hash, Image as ImageIcon, Loader2, Sparkles } from 'lucide-react';
 import type { Post } from '@/types';
 
 interface PostPreviewCardProps {
@@ -38,7 +38,7 @@ export function PostPreviewCard({ post, title = "Gönderi Önizlemesi", isLoadin
         }
     }
      else {
-      setClientFormattedTime(null); 
+      setClientFormattedTime(null);
     }
   }, [simulatedPostTime]);
 
@@ -90,6 +90,14 @@ export function PostPreviewCard({ post, title = "Gönderi Önizlemesi", isLoadin
                 </Badge>
               ))}
             </div>
+          </div>
+        )}
+        {caption && ( // Only show if AI has generated content
+          <div className="pt-2 text-center">
+            <p className="text-xs text-muted-foreground/70 flex items-center justify-center gap-1">
+              <Sparkles className="h-3 w-3" />
+              AI tarafından üretilmiştir
+            </p>
           </div>
         )}
       </CardContent>
