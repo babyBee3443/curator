@@ -4,33 +4,43 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-// Input, Label, Textarea artık doğrudan kullanılmayacak.
-// import { Input } from '@/components/ui/input';
-// import { Label } from '@/components/ui/label';
-// import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import type { Post } from '@/types';
-// import { suggestIdeasAction, generateCaptionAction, optimizeHashtagsAction, generateImageAction } from '@/lib/actions';
 import { generateFullPostAction } from '@/lib/actions';
 import { PostPreviewCard } from './post-preview-card';
-// Dialog, ScrollArea, Lightbulb, Tag, ImageIcon kaldırıldı.
 import { Send, CheckCircle, XCircle, Loader2, Sparkles } from 'lucide-react';
-// Badge ve Input (hashtag düzenleme için) kalabilir.
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input'; // Hashtag düzenlemesi için Input'u tutuyoruz.
-import { Label }
-from '@/components/ui/label'; // Hashtag düzenlemesi için Label'ı tutuyoruz.
+import { Input } from '@/components/ui/input'; 
+import { Label } from '@/components/ui/label'; 
+import * as React from 'react';
+import {cn} from '@/lib/utils';
 
 interface PostCreatorProps {
   onPostApproved: (post: Post) => void;
 }
 
+const Textarea = React.forwardRef<HTMLTextAreaElement, React.ComponentProps<'textarea'>>(
+  ({className, ...props}, ref) => {
+    return (
+      <textarea
+        className={cn(
+          'flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm',
+          className
+        )}
+        ref={ref}
+        {...props}
+      />
+    );
+  }
+);
+Textarea.displayName = 'Textarea';
+
 export function PostCreator({ onPostApproved }: PostCreatorProps) {
-  const [topic, setTopic] = useState(''); // AI tarafından doldurulacak
-  const [keyInformation, setKeyInformation] = useState(''); // AI tarafından doldurulacak
-  const [caption, setCaption] = useState(''); // AI tarafından doldurulacak
-  const [hashtags, setHashtags] = useState<string[]>([]); // AI tarafından doldurulacak
-  const [imageUrl, setImageUrl] = useState('https://placehold.co/1080x1080.png'); // AI tarafından doldurulacak
+  const [topic, setTopic] = useState(''); 
+  const [keyInformation, setKeyInformation] = useState(''); 
+  const [caption, setCaption] = useState(''); 
+  const [hashtags, setHashtags] = useState<string[]>([]); 
+  const [imageUrl, setImageUrl] = useState('https://placehold.co/1080x1080.png'); 
   const [currentPostTime, setCurrentPostTime] = useState<Date | null>(null);
   
   const [isGeneratingFullPost, setIsGeneratingFullPost] = useState(false);
@@ -52,8 +62,7 @@ export function PostCreator({ onPostApproved }: PostCreatorProps) {
 
   const handleGenerateFullPost = async () => {
     setIsGeneratingFullPost(true);
-    setImageUrl('https://placehold.co/1080x1080.png?text=Yapay+Zeka+Çalışıyor...'); // Yükleme görseli
-    // Önceki alanları temizleyelim ki kullanıcı yeni gönderiyi görsün
+    setImageUrl('https://placehold.co/1080x1080.png?text=Yapay+Zeka+Çalışıyor...'); 
     setTopic('');
     setKeyInformation('');
     setCaption('');
@@ -64,13 +73,14 @@ export function PostCreator({ onPostApproved }: PostCreatorProps) {
       setTopic(result.topic);
       setKeyInformation(result.keyInformation);
       setCaption(result.caption);
-      setHashtags(result.hashtags);
+      // Gelen hashtag'leri '#' sembollerinden temizleyerek state'e kaydediyoruz.
+      setHashtags(result.hashtags.map(h => h.trim().replace(/^#+/, '')).filter(h => h));
       setImageUrl(result.imageUrl);
       setCurrentPostTime(new Date());
       toast({ title: '🚀 Otomatik Gönderi Hazır!', description: 'Yapay zeka sizin için harika bir gönderi oluşturdu. Kontrol edip onaylayabilirsiniz.' });
     } catch (error) {
       toast({ title: '😔 Hata Oluştu', description: (error as Error).message, variant: 'destructive' });
-      setImageUrl('https://placehold.co/1080x1080.png?text=Bir+Hata+Oluştu'); // Hata görseli
+      setImageUrl('https://placehold.co/1080x1080.png?text=Bir+Hata+Oluştu'); 
     }
     setIsGeneratingFullPost(false);
   };
@@ -83,10 +93,10 @@ export function PostCreator({ onPostApproved }: PostCreatorProps) {
     }
     const newPost: Post = {
       id: `post-${Date.now()}-${Math.random().toString(36).substring(2,9)}`,
-      topic, // AI tarafından dolduruldu
-      keyInformation, // AI tarafından dolduruldu
+      topic, 
+      keyInformation, 
       caption,
-      hashtags,
+      hashtags, // State'deki temiz hashtag'ler kullanılacak
       imageUrl, 
       imageHint: topic.toLowerCase().split(" ").slice(0,2).join(" ") || "bilim teknoloji",
       simulatedPostTime: currentPostTime || new Date(),
@@ -132,7 +142,6 @@ export function PostCreator({ onPostApproved }: PostCreatorProps) {
             {isGeneratingFullPost ? 'Harika Bir Gönderi Hazırlanıyor...' : '✨ Bana Bir Gönderi Hazırla!'}
           </Button>
           
-          {/* AI tarafından doldurulduktan sonra başlık ve hashtag'ler gösterilecek ve düzenlenebilecek */}
           {caption && (
             <div className="space-y-2 pt-4">
               <Label htmlFor="caption" className="text-lg font-semibold">Oluşturulan Başlık:</Label>
@@ -150,20 +159,24 @@ export function PostCreator({ onPostApproved }: PostCreatorProps) {
             <div className="space-y-2">
               <Label className="text-lg font-semibold">Önerilen Hashtag'ler:</Label>
               <div className="flex flex-wrap gap-2 p-3 border rounded-md bg-muted/50 border-primary/30">
-                {hashtags.map((tag, index) => (
+                {hashtags.map((tag, index) => ( // tag artık '#' içermiyor
                   <Badge key={index} variant="secondary" className="text-sm">#{tag}</Badge>
                 ))}
               </div>
               <Input 
                 placeholder="Hashtag'leri düzenleyin veya ekleyin, virgülle ayrılmış"
-                defaultValue={hashtags.join(', ')}
-                onChange={(e) => setHashtags(e.target.value.split(',').map(h => h.trim()).filter(h => h))}
+                defaultValue={hashtags.join(', ')} // Temiz hashtag'ler join ediliyor
+                onChange={(e) => {
+                  const newHashtags = e.target.value
+                    .split(',')
+                    .map(h => h.trim().replace(/^#+/, '')) // Kullanıcı girişinden de '#' temizleniyor
+                    .filter(h => h);
+                  setHashtags(newHashtags);
+                }}
                 className="border-2 border-primary/30 focus:border-primary"
               />
             </div>
           )}
-           {/* Gizli topic ve keyInformation alanları, AI tarafından doldurulduktan sonra Post nesnesine eklenecek. */}
-           {/* İsterseniz bunları diagnostic amaçlı gösterebilirsiniz ama kullanıcıdan gizli olmalı. */}
            {topic && process.env.NODE_ENV === 'development' && (
             <div className="mt-4 p-2 border rounded bg-muted/30 text-xs">
                 <p><strong>AI Konu:</strong> {topic}</p>
@@ -186,31 +199,9 @@ export function PostCreator({ onPostApproved }: PostCreatorProps) {
         </CardFooter>
       </Card>
       
-      <div className="sticky top-20"> {/* Make preview sticky */}
+      <div className="sticky top-20"> 
         <PostPreviewCard post={currentPreviewPost} isLoadingImage={isGeneratingFullPost}/>
       </div>
     </div>
   );
 }
-
-// Textarea ShadCN'de ayrı bir bileşen, bu yüzden PostCreator'a ekliyoruz.
-// Veya `components/ui/textarea.tsx` dosyasından import edilebilir.
-// Burada manuel olarak ekleyelim:
-import * as React from 'react';
-import {cn} from '@/lib/utils';
-
-const Textarea = React.forwardRef<HTMLTextAreaElement, React.ComponentProps<'textarea'>>(
-  ({className, ...props}, ref) => {
-    return (
-      <textarea
-        className={cn(
-          'flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm',
-          className
-        )}
-        ref={ref}
-        {...props}
-      />
-    );
-  }
-);
-Textarea.displayName = 'Textarea';

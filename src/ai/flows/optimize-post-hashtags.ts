@@ -24,7 +24,7 @@ export type OptimizePostHashtagsInput = z.infer<typeof OptimizePostHashtagsInput
 const OptimizePostHashtagsOutputSchema = z.object({
   hashtags: z
     .array(z.string())
-    .describe('Verilen Instagram gönderisi için optimize edilmiş hashtag dizisi.'),
+    .describe('Verilen Instagram gönderisi için optimize edilmiş hashtag dizisi (önünde # olmadan).'),
 });
 
 export type OptimizePostHashtagsOutput = z.infer<typeof OptimizePostHashtagsOutputSchema>;
@@ -45,6 +45,7 @@ const optimizePostHashtagsPrompt = ai.definePrompt({
   Gönderi Başlığı: {{{postCaption}}}
 
   SADECE bir hashtag dizisi döndürün. Yanıtınıza başka bir metin eklemeyin.
+  Döndürülen hashtag'ler '#' sembolünü İÇERMEMELİDİR. Örneğin, "bilim" gibi, "#bilim" değil. Sadece kelimeleri veya kelime gruplarını listeleyin.
   `,
 });
 
@@ -56,6 +57,10 @@ const optimizePostHashtagsFlow = ai.defineFlow(
   },
   async input => {
     const {output} = await optimizePostHashtagsPrompt(input);
+    // AI'nın yine de # eklemesi ihtimaline karşı burada da temizleyelim.
+    if (output && output.hashtags) {
+      output.hashtags = output.hashtags.map(tag => tag.replace(/^#+/, '').trim()).filter(tag => tag.length > 0);
+    }
     return output!;
   }
 );
