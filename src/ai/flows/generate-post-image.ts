@@ -35,7 +35,7 @@ const generatePostImageFlow = ai.defineFlow(
   async (input) => {
     const { media } = await ai.generate({
       model: 'googleai/gemini-2.0-flash-exp', // Resim oluşturma için bu model kullanılmalıdır.
-      prompt: `Bir Instagram gönderisi için canlı ve çekici bir resim oluştur: ${input.prompt}. Resim, bilim, teknoloji veya uzay temasıyla alakalı olmalı. Fotoğraf gerçekçiliğinde veya dijital sanat tarzında olabilir.`,
+      prompt: `Bir Instagram gönderisi için canlı ve çekici bir resim oluştur: ${input.prompt}. Resim, bilim, teknoloji veya uzay temasıyla alakalı olmalı. Fotoğraf gerçekçiliğinde veya dijital sanat tarzında olabilir. ÖNEMLİ: Oluşturulan görselde KESİNLİKLE hiçbir metin, harf, kelime veya yazı bulunmamalıdır. Sadece görsel öğeler içermelidir.`,
       config: {
         responseModalities: ['IMAGE', 'TEXT'], // Hem resim hem de metin modaliteleri gereklidir.
         // Gerekirse güvenlik ayarları eklenebilir.
@@ -55,3 +55,4 @@ const generatePostImageFlow = ai.defineFlow(
     return { imageUrl: media.url };
   }
 );
+
