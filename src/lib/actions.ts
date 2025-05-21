@@ -17,7 +17,6 @@ export interface FullPostGenerationOutput {
 export async function generateFullPostAction(): Promise<FullPostGenerationOutput> {
   console.log('generateFullPostAction başlatıldı.');
   try {
-    // 1. İçerik Fikri Üret
     const idea = await suggestSingleContentIdeaFlow();
     console.log('Fikir üretildi:', idea);
     if (!idea.topic || !idea.keyInformation) {
@@ -25,10 +24,8 @@ export async function generateFullPostAction(): Promise<FullPostGenerationOutput
       throw new Error('Yapay zeka geçerli bir içerik fikri üretemedi.');
     }
 
-    // Sadece konu başlığını resim istemi olarak kullan
     const imagePrompt = idea.topic;
 
-    // 2. Resim ve Başlık Üretimini Paralelleştir
     const [imageResult, captionResult] = await Promise.all([
       generatePostImageFlow({ prompt: imagePrompt }),
       generatePostCaptionFlow({ topic: idea.topic, keyInformation: idea.keyInformation })
@@ -45,7 +42,6 @@ export async function generateFullPostAction(): Promise<FullPostGenerationOutput
       throw new Error('Yapay zeka bir başlık üretemedi.');
     }
 
-    // 3. Hashtag Optimizasyonu
     const hashtagsResult = await optimizePostHashtagsFlow({ postCaption: captionResult.caption, topic: idea.topic });
     console.log('Hashtag sonucu:', hashtagsResult);
 
@@ -70,94 +66,132 @@ export async function sharePostToInstagramAction(post: Post, accessToken?: strin
 
   if (!accessToken) {
     console.error(`[TEST] Gönderi (ID: ${post.id}) paylaşılamadı: Erişim Belirteci (Access Token) eksik.`);
-    throw new Error(`Erişim Belirteci (Access Token) eksik. Lütfen Ayarlar sayfasından belirtecinizi girin.`);
+    // Kullanıcıya gösterilecek hata mesajı zaten `PostPreviewCard` içinde ele alınıyor.
+    // Burada doğrudan throw etmek yerine, işlemin başarısız olduğunu belirten bir nesne döndürebiliriz.
+     return { success: false, message: 'Erişim Belirteci (Access Token) eksik. Lütfen Ayarlar sayfasından belirtecinizi girin.'};
   }
 
   if (post.imageUrl.startsWith('data:image')) {
     console.warn(`[TEST] Gönderi (ID: ${post.id}): Resim URL'si bir veri URI'si. Instagram Graph API doğrudan veri URI'lerini kabul etmez. API çağrısı muhtemelen başarısız olacaktır. Resmin herkese açık bir URL olması gerekir.`);
-    // Bu durum, kullanıcıya bir toast mesajıyla da bildirilebilir, ancak şimdilik sadece konsola logluyoruz.
-    // Ayarlar sayfasında bu konuda zaten bir uyarı var.
+    // Bu durum, kullanıcıya bir toast mesajıyla da bildirilebilir.
   }
 
   const fullCaption = `${post.caption}\n\n${post.hashtags.map(h => `#${h.trim()}`).join(' ')}`;
-  const instagramApiVersion = 'v19.0'; // Güncel API versiyonunu kontrol edin
+  const instagramApiVersion = 'v19.0';
 
   try {
-    console.log(`[TEST DENEMESİ - GÜVENSİZ YÖNTEM] Instagram API çağrısı deneniyor. Belirtecin ilk 10 karakteri: ${accessToken.substring(0,10)}...`);
-    console.log(`[TEST DENEMESİ] Kullanılacak resim URL'si: ${post.imageUrl}`);
-    console.log(`[TEST DENEMESİ] Kullanılacak başlık: ${fullCaption.substring(0, 100)}...`);
+    console.log(`[GERÇEK API DENEMESİ - GÜVENSİZ YÖNTEM] Instagram API çağrısı deneniyor. Belirtecin ilk 10 karakteri: ${accessToken.substring(0,10)}...`);
+    console.log(`[GERÇEK API DENEMESİ] Kullanılacak resim URL'si: ${post.imageUrl}`);
+    console.log(`[GERÇEK API DENEMESİ] Kullanılacak başlık: ${fullCaption.substring(0, 100)}...`);
 
-    // Adım 1: Medya Konteyneri Oluşturma
-    // ÖNEMLİ: image_url HERKESE AÇIK BİR URL OLMALIDIR. Veri URI'si ise bu çağrı BAŞARISIZ OLACAKTIR.
     const mediaContainerParams = new URLSearchParams({
       image_url: post.imageUrl,
       caption: fullCaption,
       access_token: accessToken,
     });
 
-    console.log('[TEST DENEMESİ] Instagram Medya Konteyneri API çağrısı yapılıyor (POST /me/media)...');
+    console.log('[GERÇEK API DENEMESİ] Instagram Medya Konteyneri API çağrısı yapılıyor (POST /me/media)...');
     const mediaContainerResponse = await fetch(`https://graph.facebook.com/${instagramApiVersion}/me/media`, {
       method: 'POST',
       body: mediaContainerParams,
     });
     
-    console.log('[TEST DENEMESİ] Medya Konteyneri API yanıt durumu:', mediaContainerResponse.status);
     const mediaContainerData = await mediaContainerResponse.json();
-    console.log('[TEST DENEMESİ] Medya Konteyneri API yanıt verisi:', JSON.stringify(mediaContainerData, null, 2));
+    console.log('[GERÇEK API DENEMESİ] Medya Konteyneri API yanıt durumu:', mediaContainerResponse.status, 'Yanıt verisi:', JSON.stringify(mediaContainerData, null, 2));
+
 
     if (!mediaContainerResponse.ok || mediaContainerData.error) {
-      console.error('[TEST DENEMESİ] Instagram medya konteyneri oluşturma hatası:', mediaContainerData.error || `HTTP ${mediaContainerResponse.status}`);
-      const errorMessage = mediaContainerData.error?.message || `API isteği başarısız oldu. HTTP Durum Kodu: ${mediaContainerResponse.status}. Resim URL'sinin herkese açık olduğundan ve belirtecinizin doğru izinlere sahip olduğundan emin olun.`;
-      throw new Error(`Instagram API Hatası (Medya Konteyneri): ${errorMessage}`);
+      const errorMessage = mediaContainerData.error?.message || `API isteği başarısız oldu (HTTP ${mediaContainerResponse.status}). Resim URL'sinin herkese açık olduğundan ve belirtecinizin doğru izinlere sahip olduğundan emin olun. Detaylar için konsolu kontrol edin.`;
+      console.error('[GERÇEK API DENEMESİ] Instagram medya konteyneri oluşturma hatası:', mediaContainerData.error || `HTTP ${mediaContainerResponse.status}`);
+      return { success: false, message: `Instagram API Hatası (Medya Konteyneri): ${errorMessage}` };
     }
 
     const creationId = mediaContainerData.id;
     if (!creationId) {
-      console.error('[TEST DENEMESİ] Instagram API: Medya konteyneri ID alınamadı. Yanıt:', mediaContainerData);
-      throw new Error('Instagram API: Medya konteyneri ID alınamadı.');
+      console.error('[GERÇEK API DENEMESİ] Instagram API: Medya konteyneri ID alınamadı. Yanıt:', mediaContainerData);
+      return { success: false, message: 'Instagram API: Medya konteyneri ID alınamadı.' };
     }
-    console.log('[TEST DENEMESİ] Instagram medya konteyneri oluşturuldu, creation_id:', creationId);
+    console.log('[GERÇEK API DENEMESİ] Instagram medya konteyneri oluşturuldu, creation_id:', creationId);
 
-    // Adım 2: Medya Konteynerini Yayınlama
     const publishParams = new URLSearchParams({
       creation_id: creationId,
       access_token: accessToken,
     });
 
-    console.log('[TEST DENEMESİ] Instagram Medya Yayınlama API çağrısı yapılıyor (POST /me/media_publish)...');
+    console.log('[GERÇEK API DENEMESİ] Instagram Medya Yayınlama API çağrısı yapılıyor (POST /me/media_publish)...');
     const publishResponse = await fetch(`https://graph.facebook.com/${instagramApiVersion}/me/media_publish`, {
       method: 'POST',
       body: publishParams,
     });
 
-    console.log('[TEST DENEMESİ] Medya Yayınlama API yanıt durumu:', publishResponse.status);
     const publishData = await publishResponse.json();
-    console.log('[TEST DENEMESİ] Medya Yayınlama API yanıt verisi:', JSON.stringify(publishData, null, 2));
+    console.log('[GERÇEK API DENEMESİ] Medya Yayınlama API yanıt durumu:', publishResponse.status, 'Yanıt verisi:', JSON.stringify(publishData, null, 2));
     
     if (!publishResponse.ok || publishData.error) {
-      console.error('[TEST DENEMESİ] Instagram medya yayınlama hatası:', publishData.error || `HTTP ${publishResponse.status}`);
-      const errorMessage = publishData.error?.message || `API isteği başarısız oldu. HTTP Durum Kodu: ${publishResponse.status}.`;
-      throw new Error(`Instagram API Hatası (Yayınlama): ${errorMessage}`);
+      const errorMessage = publishData.error?.message || `API isteği başarısız oldu (HTTP ${publishResponse.status}). Detaylar için konsolu kontrol edin.`;
+      console.error('[GERÇEK API DENEMESİ] Instagram medya yayınlama hatası:', publishData.error || `HTTP ${publishResponse.status}`);
+      return { success: false, message: `Instagram API Hatası (Yayınlama): ${errorMessage}` };
     }
     
     const instagramPostId = publishData.id;
     if (!instagramPostId) {
-        console.error('[TEST DENEMESİ] Instagram API: Yayınlama sonrası gönderi ID alınamadı. Yanıt:', publishData);
-        throw new Error('Instagram API: Yayınlama sonrası gönderi ID alınamadı.');
+        console.error('[GERÇEK API DENEMESİ] Instagram API: Yayınlama sonrası gönderi ID alınamadı. Yanıt:', publishData);
+        return { success: false, message: 'Instagram API: Yayınlama sonrası gönderi ID alınamadı.' };
     }
-    console.log(`[TEST DENEMESİ] Gönderi (ID: ${post.id}) Instagram'a başarıyla gönderildi (GERÇEK API DENEMESİ). Instagram Post ID: ${instagramPostId}`);
+    console.log(`[GERÇEK API DENEMESİ] Gönderi (ID: ${post.id}) Instagram'a başarıyla gönderildi. Instagram Post ID: ${instagramPostId}`);
     return { 
       success: true, 
-      message: `Gönderi (ID: ${post.id}) başarıyla Instagram'da yayınlandı (TEST DENEMESİ). Instagram Post ID: ${instagramPostId}`,
+      message: `Gönderi (ID: ${post.id}) başarıyla Instagram'da yayınlandı (GERÇEK API DENEMESİ). Instagram Post ID: ${instagramPostId}`,
       instagramPostId: instagramPostId
     };
 
   } catch (error) {
-    console.error(`[TEST DENEMESİ] Gönderi (ID: ${post.id}) Instagram'a gönderilemedi (GERÇEK API DENEMESİ BAŞARISIZ):`, error);
+    console.error(`[GERÇEK API DENEMESİ] Gönderi (ID: ${post.id}) Instagram'a gönderilemedi:`, error);
     if (error instanceof Error) {
-      // Kullanıcıya gösterilecek mesaj zaten error.message içinde API'den gelen detayı içeriyor olmalı.
-      return { success: false, message: `Gönderi paylaşılamadı (TEST DENEMESİ): ${error.message}` };
+      return { success: false, message: `Gönderi paylaşılamadı (GERÇEK API DENEMESİ): ${error.message}` };
     }
-    return { success: false, message: `Gönderi paylaşılamadı (TEST DENEMESİ): Bilinmeyen bir API hatası oluştu.` };
+    return { success: false, message: `Gönderi paylaşılamadı (GERÇEK API DENEMESİ): Bilinmeyen bir API hatası oluştu.` };
+  }
+}
+
+export async function sendContentByEmailAction(post: Post, recipientEmail: string): Promise<{ success: boolean; message: string }> {
+  console.log(`[E-POSTA SİMÜLASYONU] Alınan gönderi (ID: ${post.id}), Alıcı: ${recipientEmail}`);
+  const fromEmailSimulated = 'cosmoscurator34@gmail.com'; // Simüle edilmiş gönderen
+
+  // E-posta içeriğini hazırlayalım (HTML veya metin olarak)
+  const emailSubject = `Kozmos Küratörü Yeni Gönderi Önerisi: ${post.topic}`;
+  let emailBody = `Merhaba,\n\nYapay zeka sizin için yeni bir Instagram gönderi içeriği hazırladı:\n\n`;
+  emailBody += `Konu: ${post.topic}\n\n`;
+  emailBody += `Başlık Önerisi:\n${post.caption}\n\n`;
+  emailBody += `Hashtag Önerileri:\n${post.hashtags.map(h => `#${h}`).join(' ')}\n\n`;
+  emailBody += `Resim URL'si (veya Veri URI'si):\n${post.imageUrl}\n\n`;
+  emailBody += `Bu içerik, ${fromEmailSimulated} (simüle edilmiş gönderen) adresinden ${recipientEmail} adresine gönderilmek üzere hazırlandı.\n\n`;
+  emailBody += `Saygılarımızla,\nKozmos Küratörü (Yapay Zeka Asistanı)\n\n`;
+  emailBody += `--- SİMÜLASYON NOTU ---\n`;
+  emailBody += `Bu bir e-posta gönderim simülasyonudur. Gerçek e-posta gönderimi yapılmamıştır.\n`;
+  emailBody += `Gerçek gönderim için sunucu tarafında Nodemailer gibi bir kütüphane ve ${fromEmailSimulated} hesabına ait bir Google Uygulama Şifresi kullanılarak bir altyapı kurulması gerekir.\n`;
+
+  console.log("--- E-POSTA SİMÜLASYON BAŞLANGICI ---");
+  console.log("Gönderen (Simüle):", fromEmailSimulated);
+  console.log("Alıcı:", recipientEmail);
+  console.log("Konu:", emailSubject);
+  console.log("İçerik:\n", emailBody);
+  console.log("--- E-POSTA SİMÜLASYON SONU ---");
+
+  // Bu kısım gerçek Nodemailer kodunu içermeyecek, sadece simülasyon.
+  try {
+    // Burada normalde Nodemailer ile e-posta gönderme kodu olurdu.
+    // await transporter.sendMail({ from: fromEmailSimulated, to: recipientEmail, subject: emailSubject, text: emailBody });
+    // Simülasyon başarılı kabul ediliyor.
+    return {
+      success: true,
+      message: `E-posta gönderme simülasyonu başarılı. Gönderi detayları ve e-posta içeriği konsola loglandı. (Alıcı: ${recipientEmail})`,
+    };
+  } catch (error) {
+    console.error('[E-POSTA SİMÜLASYONU] Hata:', error);
+    return {
+      success: false,
+      message: `E-posta gönderme simülasyonu sırasında bir hata oluştu: ${(error as Error).message}`,
+    };
   }
 }
