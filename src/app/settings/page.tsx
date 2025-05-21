@@ -35,7 +35,6 @@ export default function SettingsPage() {
     if (storedRecipientEmail) {
       setRecipientEmail(storedRecipientEmail);
     } else {
-      // Varsayılan alıcı e-posta adresi
       setRecipientEmail('sirfpubg12@gmail.com'); 
     }
     setIsLoading(false);
@@ -51,15 +50,13 @@ export default function SettingsPage() {
       return;
     }
     setIsLoading(true);
-    // Bu belirteç sadece tarayıcının yerel depolamasında saklanır. GÜVENLİ DEĞİLDİR.
     localStorage.setItem(INSTAGRAM_TOKEN_KEY, accessToken);
-    // Kullanıcı adını simüle et
     const simulatedUsername = `kullanici_test_${Math.random().toString(36).substring(2, 7)}`;
     localStorage.setItem(INSTAGRAM_USERNAME_KEY, simulatedUsername);
     setUsername(simulatedUsername);
     setIsConnected(true);
     setIsLoading(false);
-    setAccessToken(''); // Giriş alanını temizle
+    setAccessToken(''); 
     toast({
       title: 'Belirteç Kaydedildi (YEREL OLARAK - GÜVENSİZ)',
       description: (
@@ -69,8 +66,8 @@ export default function SettingsPage() {
           <p className="text-xs">Sadece test ve geliştirme amaçlıdır. Bu belirteç, "Instagram'da Paylaş (GERÇEK API DENEMESİ)" butonu tarafından kullanılacaktır.</p>
         </div>
       ),
-      className: 'bg-yellow-600 text-white border-yellow-700', // Daha dikkat çekici bir stil
-      duration: 10000, // Mesajın daha uzun süre kalması için
+      className: 'bg-yellow-600 text-white border-yellow-700',
+      duration: 10000, 
     });
   };
 
@@ -250,8 +247,8 @@ export default function SettingsPage() {
                         <li>Google Hesap ayarlarınızdan bir "Uygulama Şifresi" oluşturmanız ve `.env.local` dosyasındaki `EMAIL_APP_PASSWORD` kısmına bu 16 haneli şifreyi girmeniz gerekir. Normal Gmail şifreniz burada çalışmayacaktır.</li>
                     </ul>
                   </li>
-                  <li>
-                    <strong>Sunucuyu Yeniden Başlatın (ÇOK ÖNEMLİ):</strong> `.env.local` dosyasını oluşturduktan veya değiştirdikten sonra, değişikliklerin Next.js tarafından algılanması için geliştirme sunucunuzu **durdurup yeniden başlatmanız ZORUNLUDUR**. (Örn: Terminalde Ctrl+C yapıp sonra tekrar `npm run dev` veya `yarn dev`).
+                  <li className="font-bold text-yellow-400 bg-yellow-500/10 p-2 rounded-md">
+                    <strong>SUNUCUYU YENİDEN BAŞLATIN (ÇOK ÖNEMLİ):</strong> `.env.local` dosyasını oluşturduktan veya değiştirdikten sonra, değişikliklerin Next.js tarafından algılanması için geliştirme sunucunuzu **durdurup yeniden başlatmanız ZORUNLUDUR**. (Örn: Terminalde Ctrl+C yapıp sonra tekrar `npm run dev` veya `yarn dev`).
                   </li>
                 </ol>
                 <p className="mt-2">Bu ayarlar doğru yapıldığında, uygulama belirttiğiniz alıcıya e-posta göndermeyi deneyecektir. Hata olması durumunda bildirim alacaksınız ve detaylar için tarayıcı konsolunu ve sunucu terminalindeki logları kontrol edebilirsiniz.</p>
@@ -288,5 +285,3 @@ export default function SettingsPage() {
     </div>
   );
 }
-
-    

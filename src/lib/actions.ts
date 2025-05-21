@@ -1,20 +1,10 @@
 
 'use server';
 
-// .env.local dosyasını AÇIKÇA YÜKLEMEYİ DENEMİYORUZ. Next.js'in bunu otomatik yapmasına güveniyoruz.
-// import { config as dotenvConfig } from 'dotenv';
-// import path from 'path';
-// const envPath = path.resolve(process.cwd(), '.env.local');
-// dotenvConfig({ path: envPath });
-
-
 import type { Post } from '@/types';
 import nodemailer from 'nodemailer';
-import { suggestSingleContentIdea as suggestSingleContentIdeaFlow } from '@/ai/flows/suggest-content-ideas';
-import { generatePostCaption as generatePostCaptionFlow } from '@/ai/flows/generate-post-captions';
-import { optimizePostHashtags as optimizePostHashtagsFlow } from '@/ai/flows/optimize-post-hashtags';
-import { generatePostImage as generatePostImageFlow } from '@/ai/flows/generate-post-image';
 
+// .env.local dosyasını AÇIKÇA YÜKLEMEYİ DENEMİYORUZ. Next.js'in bunu otomatik yapmasına güveniyoruz.
 
 export interface FullPostGenerationOutput {
   topic: string;
@@ -34,7 +24,6 @@ export async function generateFullPostAction(): Promise<FullPostGenerationOutput
       throw new Error('Yapay zeka geçerli bir içerik fikri üretemedi.');
     }
 
-    // Resim oluşturma istemi için sadece kısa konuyu kullanıyoruz
     const imagePrompt = idea.topic; 
 
     const [imageResult, captionResult] = await Promise.all([
@@ -86,14 +75,13 @@ export async function sharePostToInstagramAction(post: Post, accessToken?: strin
   }
 
   const fullCaption = `${post.caption}\n\n${post.hashtags.map(h => `#${h.trim()}`).join(' ')}`;
-  const instagramApiVersion = 'v19.0'; // Instagram API sürümünü buradan ayarlayabilirsiniz
+  const instagramApiVersion = 'v19.0'; 
 
   try {
     console.log(`[GERÇEK API DENEMESİ] Instagram API çağrısı deneniyor. Belirtecin ilk 10 karakteri: ${accessToken.substring(0,10)}...`);
     console.log(`[GERÇEK API DENEMESİ] Kullanılacak resim URL'si: ${post.imageUrl}`);
     console.log(`[GERÇEK API DENEMESİ] Kullanılacak başlık: ${fullCaption.substring(0, 100)}...`);
 
-    // Adım 1: Medya Konteyneri Oluşturma
     const mediaContainerParams = new URLSearchParams({
       image_url: post.imageUrl,
       caption: fullCaption,
@@ -125,7 +113,6 @@ export async function sharePostToInstagramAction(post: Post, accessToken?: strin
     }
     console.log('[GERÇEK API DENEMESİ] Instagram medya konteyneri oluşturuldu, creation_id:', creationId);
 
-    // Adım 2: Medya Konteynerini Yayınlama
     const publishParams = new URLSearchParams({
       creation_id: creationId,
       access_token: accessToken,
@@ -133,9 +120,6 @@ export async function sharePostToInstagramAction(post: Post, accessToken?: strin
 
     console.log('[GERÇEK API DENEMESİ] Instagram Medya Yayınlama API çağrısı yapılıyor (POST /me/media_publish)... Parametreler:', publishParams.toString());
     
-    // Instagram'ın medya işleme süresi için biraz bekleme eklemek faydalı olabilir.
-    // await new Promise(resolve => setTimeout(resolve, 5000)); // 5 saniye bekle (opsiyonel)
-
     const publishResponse = await fetch(`https://graph.facebook.com/${instagramApiVersion}/me/media_publish`, {
       method: 'POST',
       body: publishParams,
@@ -174,34 +158,37 @@ export async function sharePostToInstagramAction(post: Post, accessToken?: strin
 
 export async function sendContentByEmailAction(post: Post, recipientEmail: string): Promise<{ success: boolean; message: string }> {
   console.log('--- [E-POSTA GÖNDERME DENEMESİ BAŞLANGICI (actions.ts)] ---');
-  console.log('[ACTIONS.TS] process.cwd():', process.cwd());
   
-  // Ortam değişkenlerinin doğrudan değerlerini loglayalım
-  const rawSenderEmail = process.env.EMAIL_SENDER_ADDRESS;
-  const rawAppPassword = process.env.EMAIL_APP_PASSWORD;
+  // Ortam değişkenlerini doğrudan okumayı deneyelim
+  const senderEmailFromEnv = process.env.EMAIL_SENDER_ADDRESS;
+  const appPasswordFromEnv = process.env.EMAIL_APP_PASSWORD;
 
-  console.log(`[ACTIONS.TS] Okunan process.env.EMAIL_SENDER_ADDRESS: ${rawSenderEmail || 'BULUNAMADI'}`);
-  console.log(`[ACTIONS.TS] Okunan process.env.EMAIL_APP_PASSWORD: ${rawAppPassword ? 'MEVCUT (gizli)' : 'BULUNAMADI'}`);
-  
-  const senderEmail = rawSenderEmail;
-  const appPassword = rawAppPassword;
+  console.log(`[ACTIONS.TS] process.env.EMAIL_SENDER_ADDRESS okunuyor: "${senderEmailFromEnv}" (tip: ${typeof senderEmailFromEnv})`);
+  console.log(`[ACTIONS.TS] process.env.EMAIL_APP_PASSWORD okunuyor: ${appPasswordFromEnv ? 'DEĞER MEVCUT (gizli)' : 'DEĞER BULUNAMADI/UNDEFINED'} (tip: ${typeof appPasswordFromEnv})`);
 
-  if (!senderEmail || !appPassword) {
-    const errorMessage = 'E-posta gönderimi yapılandırma hatası: Gönderen e-posta adresi (EMAIL_SENDER_ADDRESS) veya uygulama şifresi (EMAIL_APP_PASSWORD) ortam değişkenlerinde tanımlanmamış. Lütfen projenizin ana dizinindeki .env.local dosyasını doğru yapılandırdığınızdan ve sunucuyu yeniden başlattığınızdan emin olun.';
+  // Tüm process.env anahtarlarını loglayalım (dikkatli olun, hassas veri içerebilir, sadece test amaçlı)
+  // console.log('[ACTIONS.TS] Tüm process.env anahtarları:', Object.keys(process.env));
+  // Özellikle Next.js tarafından eklenen public değişkenleri kontrol edelim:
+  // console.log('[ACTIONS.TS] NEXT_PUBLIC_ ile başlayan değişkenler:', Object.keys(process.env).filter(key => key.startsWith('NEXT_PUBLIC_')));
+
+
+  if (!senderEmailFromEnv || !appPasswordFromEnv) {
+    const errorMessage = 'E-posta gönderimi yapılandırma hatası: Gönderen e-posta adresi (EMAIL_SENDER_ADDRESS) veya uygulama şifresi (EMAIL_APP_PASSWORD) ortam değişkenlerinde tanımlanmamış. Lütfen projenizin ana dizinindeki .env.local dosyasını doğru yapılandırdığınızdan ve **SUNUCUYU YENİDEN BAŞLATTIĞINIZDAN** emin olun.';
     console.error(`[E-POSTA GÖNDERME HATASI - actions.ts] ${errorMessage}`);
+    console.log('--- [E-POSTA GÖNDERME DENEMESİ SONU - BAŞARISIZ (actions.ts) - DEĞİŞKENLER OKUNAMADI] ---');
     return {
       success: false,
       message: errorMessage,
     };
   }
 
-  console.log(`[ACTIONS.TS] Kullanılacak gönderen e-posta: ${senderEmail}`);
+  console.log(`[ACTIONS.TS] Kullanılacak gönderen e-posta: ${senderEmailFromEnv}`);
 
   const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
-      user: senderEmail,
-      pass: appPassword,
+      user: senderEmailFromEnv,
+      pass: appPasswordFromEnv,
     },
   });
 
@@ -214,7 +201,7 @@ export async function sendContentByEmailAction(post: Post, recipientEmail: strin
   emailBody += `Saygılarımızla,\nKozmos Küratörü (Yapay Zeka Asistanı)`;
 
   const mailOptions = {
-    from: `"Kozmos Küratörü AI" <${senderEmail}>`,
+    from: `"Kozmos Küratörü AI" <${senderEmailFromEnv}>`,
     to: recipientEmail,
     subject: emailSubject,
     text: emailBody,
@@ -233,7 +220,7 @@ export async function sendContentByEmailAction(post: Post, recipientEmail: strin
     console.log("--- [E-POSTA GÖNDERME DENEMESİ SONU - BAŞARILI (actions.ts)] ---");
     return {
       success: true,
-      message: `E-posta başarıyla ${recipientEmail} adresine gönderildi. (Gönderen: ${senderEmail})`,
+      message: `E-posta başarıyla ${recipientEmail} adresine gönderildi. (Gönderen: ${senderEmailFromEnv})`,
     };
   } catch (error) {
     console.error('[ACTIONS.TS] E-posta gönderme hatası:', error);
@@ -258,4 +245,7 @@ export async function sendContentByEmailAction(post: Post, recipientEmail: strin
   }
 }
 
-    
+import { suggestSingleContentIdea as suggestSingleContentIdeaFlow } from '@/ai/flows/suggest-content-ideas';
+import { generatePostCaption as generatePostCaptionFlow } from '@/ai/flows/generate-post-captions';
+import { optimizePostHashtags as optimizePostHashtagsFlow } from '@/ai/flows/optimize-post-hashtags';
+import { generatePostImage as generatePostImageFlow } from '@/ai/flows/generate-post-image';
