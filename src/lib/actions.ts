@@ -1,18 +1,16 @@
 
 'use server';
 
-import { config as dotenvConfig } from 'dotenv';
-// Ortam değişkenlerini yüklemeyi dene (Next.js normalde bunu yapar ama Genkit/actions için ek güvence)
-// Proje kök dizinindeki .env ve .env.local dosyalarını arar.
-dotenvConfig(); 
+// Ortam değişkenlerinin Next.js tarafından otomatik olarak yüklenmesi beklenir.
+// dotenv.config() çağrısına burada gerek yoktur ve kafa karışıklığına yol açabilir.
 
 import type { Post } from '@/types';
 import nodemailer from 'nodemailer';
 
 // Bu loglar, dosya her yüklendiğinde (sunucu başladığında veya dosya değiştiğinde) çalışır.
 // Ortam değişkenlerinin Next.js tarafından doğru şekilde yüklenip yüklenmediğini gösterir.
-console.log('[ACTIONS.TS] MODÜL YÜKLENDİ - Ortam Değişkenleri Kontrolü:');
-console.log(`[ACTIONS.TS] > process.env.EMAIL_SENDER_ADDRESS: "${process.env.EMAIL_SENDER_ADDRESS ? process.env.EMAIL_SENDER_ADDRESS.substring(0,3) + '...' : 'BULUNAMADI'}"`);
+console.log('[ACTIONS.TS] MODÜL YÜKLENDİ - Ortam Değişkenleri Kontrolü (Modül Yüklenirken):');
+console.log(`[ACTIONS.TS] > process.env.EMAIL_USER: "${process.env.EMAIL_USER ? process.env.EMAIL_USER.substring(0,3) + '...' : 'BULUNAMADI'}"`);
 console.log(`[ACTIONS.TS] > process.env.EMAIL_APP_PASSWORD: "${process.env.EMAIL_APP_PASSWORD ? 'DEĞER MEVCUT (gizli)' : 'BULUNAMADI'}"`);
 
 
@@ -34,7 +32,7 @@ export async function generateFullPostAction(): Promise<FullPostGenerationOutput
       throw new Error('Yapay zeka geçerli bir içerik fikri üretemedi.');
     }
 
-    const imagePrompt = idea.topic; // Sadece konu başlığını kullan
+    const imagePrompt = idea.topic; 
 
     const [imageResult, captionResult] = await Promise.all([
       generatePostImageFlow({ prompt: imagePrompt }),
@@ -77,16 +75,15 @@ export async function sendPostByEmail(
 ): Promise<{ success: boolean; message: string }> {
   console.log(`[sendPostByEmail] FONKSIYON ÇAĞRILDI. Alıcı: ${recipientEmail}`);
   
-  // Fonksiyon çağrıldığında ortam değişkenlerini tekrar kontrol et
-  const senderEmail = process.env.EMAIL_SENDER_ADDRESS;
+  const senderEmail = process.env.EMAIL_USER; // .env dosyanızdaki EMAIL_USER değişkenini kullanıyoruz
   const senderAppPassword = process.env.EMAIL_APP_PASSWORD;
 
   console.log(`[sendPostByEmail] Ortam Değişkenleri Kontrolü (Fonksiyon İçi):`);
-  console.log(`[sendPostByEmail] > senderEmail DEĞERİ: "${senderEmail}" (tip: ${typeof senderEmail})`);
+  console.log(`[sendPostByEmail] > senderEmail (EMAIL_USER) DEĞERİ: "${senderEmail}" (tip: ${typeof senderEmail})`);
   console.log(`[sendPostByEmail] > senderAppPassword DEĞERİ: "${senderAppPassword ? 'DEĞER MEVCUT (gizli)' : 'BULUNAMADI veya BOŞ'}" (tip: ${typeof senderAppPassword})`);
 
   if (!senderEmail || !senderAppPassword) {
-    const errorMessage = 'E-posta gönderimi yapılandırma hatası: Gönderen bilgileri eksik. Lütfen .env.local dosyasını doğru yapılandırdığınızdan ve sunucuyu yeniden başlattığınızdan emin olun. Terminal loglarını kontrol edin.';
+    const errorMessage = 'E-posta gönderimi yapılandırma hatası: Gönderen bilgileri (EMAIL_USER veya EMAIL_APP_PASSWORD) .env dosyasında eksik veya okunamadı. Lütfen .env dosyasını doğru yapılandırdığınızdan ve sunucuyu yeniden başlattığınızdan emin olun. Terminal loglarını kontrol edin.';
     console.error(`[sendPostByEmail] HATA: ${errorMessage}`);
     return { success: false, message: errorMessage };
   }
@@ -141,7 +138,7 @@ export async function sendPostByEmail(
       errorMessage = `E-posta gönderilemedi: ${error.message}. Gmail ayarlarınızı ve uygulama şifrenizi kontrol edin.`;
        // @ts-ignore
       if (error.responseCode === 535 || (error.message && error.message.toLowerCase().includes('credentials'))) { 
-        errorMessage = 'E-posta gönderilemedi: Gmail kimlik doğrulama hatası (535 - Geçersiz kimlik bilgileri). Uygulama şifrenizi ve gönderen e-posta adresini kontrol edin. Google hesabınızda 2 Adımlı Doğrulama\'nın etkin ve bir Uygulama Şifresi oluşturulmuş olması gerekir.';
+        errorMessage = 'E-posta gönderilemedi: Gmail kimlik doğrulama hatası (535 - Geçersiz kimlik bilgileri). Uygulama şifrenizi ve gönderen e-posta adresini (EMAIL_USER) kontrol edin. Google hesabınızda 2 Adımlı Doğrulama\'nın etkin ve bir Uygulama Şifresi oluşturulmuş olması gerekir.';
       }
     }
     return { success: false, message: errorMessage };
@@ -153,5 +150,3 @@ import { suggestSingleContentIdea as suggestSingleContentIdeaFlow } from '@/ai/f
 import { generatePostCaption as generatePostCaptionFlow } from '@/ai/flows/generate-post-captions';
 import { optimizePostHashtags as optimizePostHashtagsFlow } from '@/ai/flows/optimize-post-hashtags';
 import { generatePostImage as generatePostImageFlow } from '@/ai/flows/generate-post-image';
-
-    
