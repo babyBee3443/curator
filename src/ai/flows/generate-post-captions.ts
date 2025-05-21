@@ -54,6 +54,12 @@ const generatePostCaptionFlow = ai.defineFlow(
   },
   async input => {
     const {output} = await prompt(input);
+    if (output && output.caption) {
+      // Başlığın sonuna yapay zeka tarafından üretildiğine dair not ekleyelim.
+      // \n\n ile birkaç satır boşluk bırakıyoruz.
+      output.caption = `${output.caption.trim()}\n\n\nBu gönderi yapay zeka tarafından üretilmiştir.`;
+    }
     return output!;
   }
 );
+
