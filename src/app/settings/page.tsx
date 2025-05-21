@@ -54,7 +54,7 @@ export default function SettingsPage() {
     setIsLoading(false);
     setAccessToken(''); 
     toast({
-      title: 'Belirteç Kaydedildi (YEREL SİMÜLASYON)',
+      title: 'Belirteç Kaydedildi',
       description: (
         <div>
           <p>{simulatedUsername} adına belirteciniz yerel olarak (tarayıcıda) saklandı.</p>
@@ -96,10 +96,10 @@ export default function SettingsPage() {
         <CardHeader>
           <CardTitle className="text-xl flex items-center gap-2">
             <Instagram className="h-6 w-6 text-pink-600" />
-            Instagram Bağlantısı (TEST ve SİMÜLASYON Amaçlı)
+            Instagram Bağlantısı (DENEysel Gerçek API Çağrısı)
           </CardTitle>
           <CardDescription>
-            Elde ettiğiniz Instagram Erişim Belirtecinizi (Access Token) buraya girerek gönderi paylaşımını test edebilirsiniz.
+            Meta Geliştirici Portalından aldığınız Uzun Ömürlü Kullanıcı Erişim Belirtecinizi (Access Token) buraya girerek GERÇEK Instagram API'sine gönderi paylaşımını test edebilirsiniz.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -110,7 +110,7 @@ export default function SettingsPage() {
               <p>Bu bölümdeki işlevsellik, Instagram API'si ile **deneme ve test amaçlı** etkileşim kurmak içindir. Gerçek Instagram Erişim Belirteçlerini (Access Token) doğrudan tarayıcıya girmek ve yerel depolamada (`localStorage`) saklamak **KESİNLİKLE GÜVENLİ DEĞİLDİR** ve üretim ortamlarında **ASLA KULLANILMAMALIDIR**.</p>
               <p>Gerçek bir uygulamada, erişim belirteçleri sunucu tarafında güvenli bir şekilde (örneğin, şifrelenmiş veritabanında) saklanmalı, OAuth 2.0 akışı ile alınmalı/yenilenmeli ve tüm API çağrıları bu güvenli sunucu ortamından yapılmalıdır.</p>
               <p className="font-semibold">Bu sayfaya girdiğiniz belirteçler SADECE tarayıcınızda kalır ve yetkisiz erişime, güvenlik açıklarına son derece müsaittir.</p>
-              <p className="font-semibold text-yellow-300">Instagram API Testi İçin Önemli Not: Yapay zeka tarafından oluşturulan resimler veri URI'si (`data:image/...`) formatındadır. Instagram Graph API, `image_url` parametresi ile resim yüklerken, bu URL'nin HERKESE AÇIK BİR İNTERNET ADRESİ olmasını bekler. Veri URI'leri ile doğrudan API çağrısı BAŞARISIZ OLACAKTIR. Test için herkese açık bir resim URL'si kullanmanız veya resmi önce bir yere yükleyip URL'sini kullanmanız gerekir.</p>
+              <p className="font-bold text-yellow-300">Instagram API Testi İçin En Önemli Not: Yapay zeka tarafından oluşturulan resimler genellikle veri URI'si (`data:image/...`) formatındadır. Instagram Graph API, `image_url` parametresi ile resim yüklerken, bu URL'nin HERKESE AÇIK BİR İNTERNET ADRESİ olmasını bekler. Veri URI'leri ile doğrudan API çağrısı BAŞARISIZ OLACAKTIR. Bu testin çalışması için, paylaşılacak resmin önce herkese açık bir sunucuya yüklenip (örneğin Imgur, Firebase Storage vb.) o URL'nin kullanılması veya gönderi oluşturulurken bu tür bir URL'nin manuel olarak girilmesi gerekir.</p>
             </AlertDescription>
           </Alert>
 
@@ -124,7 +124,7 @@ export default function SettingsPage() {
           {!isLoading && isConnected && username && (
             <div className="space-y-3 p-4 border border-green-500 rounded-md bg-green-500/10">
               <p className="text-green-400 font-semibold">
-                Instagram hesabına yerel belirteç ile bağlı (SİMÜLASYON): <span className="font-bold text-green-300">@{username}</span>
+                Instagram hesabına yerel belirteç ile bağlı (TEST): <span className="font-bold text-green-300">@{username}</span>
               </p>
               <p className="text-xs text-yellow-500">UYARI: Bu bağlantı sadece yerel depolama kullanır ve GÜVENLİ DEĞİLDİR.</p>
               <Button variant="outline" onClick={handleDisconnectInstagram} disabled={isLoading} className="border-red-500 text-red-500 hover:bg-red-500/10">
@@ -167,7 +167,7 @@ export default function SettingsPage() {
           <div className="mt-6 p-4 border rounded-md bg-muted/50">
             <h4 className="font-semibold text-sm text-foreground mb-2">Gerçek Instagram Entegrasyonu Adımları:</h4>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Bu sayfadaki işlevsellik, gerçek bir Instagram entegrasyonunun **çok basitleştirilmiş ve güvensiz bir simülasyonudur**. Üretim seviyesinde bir entegrasyon aşağıdaki gibi adımları içerir:
+              Bu sayfadaki işlevsellik, gerçek bir Instagram entegrasyonunun **çok basitleştirilmiş ve güvensiz bir test arayüzüdür**. Üretim seviyesinde bir entegrasyon aşağıdaki gibi adımları içerir:
             </p>
             <ol className="list-decimal list-inside text-xs text-muted-foreground mt-2 space-y-1">
               <li>**Meta Geliştirici Hesabı ve Uygulama Oluşturma:** Meta for Developers portalında bir hesap açın ve yeni bir uygulama kaydedin. Gerekli ürünleri (örn: Instagram Graph API) ekleyin ve izinleri (örn: `instagram_content_publish`) yapılandırın.</li>
@@ -198,3 +198,5 @@ export default function SettingsPage() {
     </div>
   );
 }
+
+    

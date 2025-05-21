@@ -68,8 +68,8 @@ export function PostPreviewCard({ post, title = "Gönderi Önizlemesi", isLoadin
         title: 'Bağlantı Gerekli',
         description: (
             <div className="flex flex-col gap-2">
-                <p>Instagram gönderi simülasyonu için önce Ayarlar sayfasından bir Erişim Belirteci girmelisiniz.</p>
-                <p className="text-xs font-semibold text-yellow-400 flex items-center gap-1"><AlertTriangle className="h-4 w-4" /> Bu işlem güvensizdir ve sadece test amaçlıdır!</p>
+                <p>Instagram gönderi paylaşımını denemek için önce Ayarlar sayfasından bir Erişim Belirteci girmelisiniz.</p>
+                <p className="text-xs font-semibold text-yellow-400 flex items-center gap-1"><AlertTriangle className="h-4 w-4" /> Bu belirteç yerel depolamada saklanır ve GÜVENLİ DEĞİLDİR.</p>
             </div>
         ),
         variant: 'destructive',
@@ -80,16 +80,27 @@ export function PostPreviewCard({ post, title = "Gönderi Önizlemesi", isLoadin
 
     setIsSharing(true);
     try {
+      // sharePostToInstagramAction artık gerçek API çağrısı yapmayı deneyecek.
       const result = await sharePostToInstagramAction(post as Post, accessToken);
-      toast({
-        title: 'Paylaşım Simülasyonu Başarılı',
-        description: result.message,
-      });
+      if (result.success) {
+        toast({
+            title: 'Instagram API Denemesi Başarılı',
+            description: result.message,
+        });
+      } else {
+        toast({
+            title: 'Instagram API Denemesi Başarısız',
+            description: result.message,
+            variant: 'destructive',
+            duration: 10000,
+        });
+      }
     } catch (error) {
       toast({
-        title: 'Paylaşım Simülasyonu Hatası',
+        title: 'Paylaşım Denemesi Hatası',
         description: (error as Error).message,
         variant: 'destructive',
+        duration: 10000,
       });
     }
     setIsSharing(false);
@@ -167,7 +178,7 @@ export function PostPreviewCard({ post, title = "Gönderi Önizlemesi", isLoadin
             size="sm"
           >
             {isSharing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Share2 className="mr-2 h-4 w-4" />}
-            {isSharing ? 'Paylaşılıyor...' : "Instagram'da Paylaş (Simülasyon)"}
+            {isSharing ? 'Paylaşılıyor...' : "Instagram'da Paylaş (GERÇEK API DENEMESİ)"}
           </Button>
         )}
       </CardFooter>
