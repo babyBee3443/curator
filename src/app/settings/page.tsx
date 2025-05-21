@@ -6,13 +6,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
-import { Instagram, Loader2, KeyRound, AlertTriangle } from 'lucide-react';
+import { Instagram, Loader2, KeyRound, AlertTriangle, ExternalLink } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const INSTAGRAM_TOKEN_KEY = 'instagramAccessToken_sim';
-const INSTAGRAM_USERNAME_KEY = 'instagramUsername_sim'; // Kullanıcı adı için de bir anahtar
+const INSTAGRAM_USERNAME_KEY = 'instagramUsername_sim'; 
 
 export default function SettingsPage() {
   const { toast } = useToast();
@@ -26,7 +26,7 @@ export default function SettingsPage() {
     const storedUsername = localStorage.getItem(INSTAGRAM_USERNAME_KEY);
     if (storedToken) {
       setIsConnected(true);
-      setUsername(storedUsername || 'Bilinmeyen Kullanıcı'); // Kullanıcı adı yoksa varsayılan
+      setUsername(storedUsername || 'Bilinmeyen Kullanıcı'); 
     }
     setIsLoading(false);
   }, []);
@@ -42,20 +42,28 @@ export default function SettingsPage() {
     }
     setIsLoading(true);
     // SİMÜLASYON: Gerçek bir API çağrısı yok. Sadece localStorage'a kaydediyoruz.
+    // GERÇEK BİR UYGULAMADA BU ÇOK GÜVENSİZDİR!
     localStorage.setItem(INSTAGRAM_TOKEN_KEY, accessToken);
-    // Kullanıcı adı için basit bir yer tutucu, gerçekte bu API'den alınır.
-    const simulatedUsername = `kullanici_${Math.random().toString(36).substring(2, 7)}`;
+    
+    // Kullanıcı adı için basit bir yer tutucu, gerçekte bu API'den alınabilir veya kullanıcıdan istenebilir.
+    const simulatedUsername = `kullanici_test_${Math.random().toString(36).substring(2, 7)}`;
     localStorage.setItem(INSTAGRAM_USERNAME_KEY, simulatedUsername);
 
     setUsername(simulatedUsername);
     setIsConnected(true);
     setIsLoading(false);
-    setAccessToken(''); // Giriş alanını temizle
+    setAccessToken(''); 
     toast({
-      title: 'Belirteç Kaydedildi (Simülasyon)',
-      description: `${simulatedUsername} adına belirteciniz yerel olarak (tarayıcıda) saklandı. GERÇEK KULLANIM İÇİN BU GÜVENLİ DEĞİLDİR!`,
-      className: 'bg-yellow-500 text-black',
-      duration: 7000,
+      title: 'Belirteç Kaydedildi (YEREL SİMÜLASYON)',
+      description: (
+        <div>
+          <p>{simulatedUsername} adına belirteciniz yerel olarak (tarayıcıda) saklandı.</p>
+          <p className="font-bold text-yellow-400 mt-2">BU YÖNTEM GERÇEK KULLANIM İÇİN KESİNLİKLE GÜVENLİ DEĞİLDİR!</p>
+          <p className="text-xs">Sadece test ve geliştirme amaçlıdır.</p>
+        </div>
+      ),
+      className: 'bg-yellow-600 text-white border-yellow-700',
+      duration: 10000,
     });
   };
 
@@ -67,7 +75,7 @@ export default function SettingsPage() {
     setUsername(null);
     setIsLoading(false);
     toast({
-      title: 'Bağlantı Kesildi (Simülasyon)',
+      title: 'Bağlantı Kesildi (Yerel Belirteç Silindi)',
       description: 'Instagram Erişim Belirteciniz yerel depolamadan kaldırıldı.',
     });
   };
@@ -79,7 +87,7 @@ export default function SettingsPage() {
           Ayarlar
         </h1>
         <p className="text-muted-foreground">
-          Uygulama tercihlerinizi ve entegrasyonlarınızı yönetin.
+          Uygulama tercihlerinizi ve Instagram API bağlantı (TEST) ayarlarınızı yönetin.
         </p>
       </div>
       <Separator className="my-6" />
@@ -88,20 +96,21 @@ export default function SettingsPage() {
         <CardHeader>
           <CardTitle className="text-xl flex items-center gap-2">
             <Instagram className="h-6 w-6 text-pink-600" />
-            Instagram Bağlantısı (Simülasyon ve Test Amaçlı)
+            Instagram Bağlantısı (TEST ve SİMÜLASYON Amaçlı)
           </CardTitle>
           <CardDescription>
-            Instagram Erişim Belirtecinizi (Access Token) buraya girerek gönderi paylaşım simülasyonunu etkinleştirin.
+            Elde ettiğiniz Instagram Erişim Belirtecinizi (Access Token) buraya girerek gönderi paylaşımını test edebilirsiniz.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <Alert variant="destructive" className="bg-red-900 border-red-700 text-white">
             <AlertTriangle className="h-5 w-5 text-yellow-300" />
-            <AlertTitle className="text-yellow-300 font-bold">ÇOK ÖNEMLİ GÜVENLİK UYARISI!</AlertTitle>
-            <AlertDescription className="text-neutral-200">
-              Bu bölüm **sadece test ve geliştirme simülasyonu** içindir. Gerçek Instagram Erişim Belirteçlerini (Access Token) doğrudan tarayıcıya girmek ve yerel depolamada (`localStorage`) saklamak **KESİNLİKLE GÜVENLİ DEĞİLDİR**.
-              Gerçek bir uygulamada, erişim belirteçleri sunucu tarafında güvenli bir şekilde saklanmalı ve yönetilmelidir (OAuth 2.0 akışı ile).
-              Buraya girdiğiniz belirteçler tarayıcınızda kalır ve yetkisiz erişime açık olabilir. **Lütfen bu özelliği sadece kısa süreli testler için ve üretim dışı (test) belirteçleriyle kullanın.**
+            <AlertTitle className="text-yellow-300 font-bold">ÇOK ÖNEMLİ GÜVENLİK VE KULLANIM UYARILARI!</AlertTitle>
+            <AlertDescription className="text-neutral-200 space-y-2">
+              <p>Bu bölümdeki işlevsellik, Instagram API'si ile **deneme ve test amaçlı** etkileşim kurmak içindir. Gerçek Instagram Erişim Belirteçlerini (Access Token) doğrudan tarayıcıya girmek ve yerel depolamada (`localStorage`) saklamak **KESİNLİKLE GÜVENLİ DEĞİLDİR** ve üretim ortamlarında **ASLA KULLANILMAMALIDIR**.</p>
+              <p>Gerçek bir uygulamada, erişim belirteçleri sunucu tarafında güvenli bir şekilde (örneğin, şifrelenmiş veritabanında) saklanmalı, OAuth 2.0 akışı ile alınmalı/yenilenmeli ve tüm API çağrıları bu güvenli sunucu ortamından yapılmalıdır.</p>
+              <p className="font-semibold">Bu sayfaya girdiğiniz belirteçler SADECE tarayıcınızda kalır ve yetkisiz erişime, güvenlik açıklarına son derece müsaittir.</p>
+              <p className="font-semibold text-yellow-300">Instagram API Testi İçin Önemli Not: Yapay zeka tarafından oluşturulan resimler veri URI'si (`data:image/...`) formatındadır. Instagram Graph API, `image_url` parametresi ile resim yüklerken, bu URL'nin HERKESE AÇIK BİR İNTERNET ADRESİ olmasını bekler. Veri URI'leri ile doğrudan API çağrısı BAŞARISIZ OLACAKTIR. Test için herkese açık bir resim URL'si kullanmanız veya resmi önce bir yere yükleyip URL'sini kullanmanız gerekir.</p>
             </AlertDescription>
           </Alert>
 
@@ -115,8 +124,9 @@ export default function SettingsPage() {
           {!isLoading && isConnected && username && (
             <div className="space-y-3 p-4 border border-green-500 rounded-md bg-green-500/10">
               <p className="text-green-400 font-semibold">
-                Instagram hesabına yerel belirteç ile bağlı (Simülasyon): <span className="font-bold text-green-300">@{username}</span>
+                Instagram hesabına yerel belirteç ile bağlı (SİMÜLASYON): <span className="font-bold text-green-300">@{username}</span>
               </p>
+              <p className="text-xs text-yellow-500">UYARI: Bu bağlantı sadece yerel depolama kullanır ve GÜVENLİ DEĞİLDİR.</p>
               <Button variant="outline" onClick={handleDisconnectInstagram} disabled={isLoading} className="border-red-500 text-red-500 hover:bg-red-500/10">
                 {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                 Bağlantıyı Kes (Yerel Belirteci Sil)
@@ -133,14 +143,14 @@ export default function SettingsPage() {
                 </Label>
                 <Input
                   id="accessToken"
-                  type="password" // Hassas bilgi olduğu için maskeleyelim
+                  type="password" 
                   value={accessToken}
                   onChange={(e) => setAccessToken(e.target.value)}
-                  placeholder="Meta Geliştirici Portalından aldığınız belirteci buraya yapıştırın"
+                  placeholder="Meta Geliştirici Portalından aldığınız UZUN ÖMÜRLÜ belirteci buraya yapıştırın"
                   className="text-sm"
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  Bu belirteç sadece tarayıcınızda saklanacaktır ve GÜVENLİ DEĞİLDİR. Test amaçlı kullanın.
+                  Bu belirteç sadece tarayıcınızda saklanacaktır ve GÜVENLİ DEĞİLDİR. Sadece test amaçlı kullanın.
                 </p>
               </div>
               <Button
@@ -149,7 +159,7 @@ export default function SettingsPage() {
                 className="bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 text-white hover:opacity-90 w-full"
               >
                 {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Instagram className="mr-2 h-5 w-5" />}
-                Erişim Belirtecini Kaydet ve Bağlan (Simülasyon)
+                Erişim Belirtecini Kaydet ve Bağlan (Sadece Yerel Test İçin)
               </Button>
             </div>
           )}
@@ -157,31 +167,34 @@ export default function SettingsPage() {
           <div className="mt-6 p-4 border rounded-md bg-muted/50">
             <h4 className="font-semibold text-sm text-foreground mb-2">Gerçek Instagram Entegrasyonu Adımları:</h4>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Bu sayfadaki işlevsellik, gerçek bir Instagram entegrasyonunun **çok basitleştirilmiş bir simülasyonudur**. Gerçek bir entegrasyon aşağıdaki gibi adımları içerir:
+              Bu sayfadaki işlevsellik, gerçek bir Instagram entegrasyonunun **çok basitleştirilmiş ve güvensiz bir simülasyonudur**. Üretim seviyesinde bir entegrasyon aşağıdaki gibi adımları içerir:
             </p>
             <ol className="list-decimal list-inside text-xs text-muted-foreground mt-2 space-y-1">
-              <li>**Meta Geliştirici Hesabı ve Uygulama Oluşturma:** Meta for Developers portalında bir hesap açın ve yeni bir uygulama kaydedin.</li>
-              <li>**Instagram Graph API Ürününü Ekleme:** Oluşturduğunuz uygulamaya "Instagram Graph API" ürününü ekleyin ve gerekli izinleri (örn: `instagram_content_publish`) yapılandırın.</li>
+              <li>**Meta Geliştirici Hesabı ve Uygulama Oluşturma:** Meta for Developers portalında bir hesap açın ve yeni bir uygulama kaydedin. Gerekli ürünleri (örn: Instagram Graph API) ekleyin ve izinleri (örn: `instagram_content_publish`) yapılandırın.</li>
               <li>**OAuth 2.0 Yönlendirme URL'lerini Ayarlama:** Güvenli kimlik doğrulama akışı için geçerli yönlendirme (redirect) URI'ları belirleyin.</li>
-              <li>**Sunucu Tarafında OAuth Akışını Uygulama:**
+              <li>**Sunucu Tarafında Güvenli OAuth Akışını Uygulama:**
                 <ul className="list-disc list-inside ml-4">
                   <li>Kullanıcıyı Instagram'ın yetkilendirme sayfasına yönlendirin.</li>
                   <li>Kullanıcı izin verdikten sonra uygulamanızın yönlendirme URI'sına dönen yetkilendirme kodunu alın.</li>
-                  <li>Bu kodu, sunucu tarafında bir Instagram Kullanıcı Erişim Belirteci (Access Token) ile değiştirin. Bu işlem için Uygulama Kimliğiniz (App ID) ve Uygulama Sırrınız (App Secret) gerekir.</li>
+                  <li>Bu kodu, sunucu tarafında (App ID ve App Secret kullanarak) bir Instagram Kullanıcı Erişim Belirteci (Access Token) ile değiştirin.</li>
                 </ul>
               </li>
-              <li>**Erişim Belirteçlerini Güvenli Saklama:** Elde edilen erişim belirteçlerini (ve varsa yenileme belirteçlerini) sunucu tarafında, şifrelenmiş ve güvenli bir veritabanında saklayın.</li>
+              <li>**Erişim Belirteçlerini Güvenli Saklama:** Elde edilen erişim belirteçlerini (ve varsa yenileme belirteçlerini) sunucu tarafında, şifrelenmiş ve güvenli bir veritabanında saklayın. **Asla istemci tarafında veya kod içinde saklamayın.**</li>
               <li>**API İsteklerini Sunucu Üzerinden Yapma:** Instagram API'lerine (örneğin gönderi paylaşma) tüm istekleri, sakladığınız erişim belirtecini kullanarak sunucu tarafındaki kodunuzdan yapın. Erişim belirtecini asla istemci tarafına (tarayıcıya) göndermeyin.</li>
               <li>**Belirteç Yenileme ve Hata Yönetimi:** Uzun ömürlü belirteçlerin süresi dolmadan önce yenileyin ve API'den gelebilecek hataları uygun şekilde yönetin.</li>
+               <li>**Resim Yükleme:** Instagram Graph API'ye resim yüklerken, resmin herkese açık bir URL'de barındırılması veya API'nin beklediği formatta (örn: multipart/form-data) yüklenmesi gerekir. Veri URI'leri (`data:image/...`) genellikle doğrudan kabul edilmez.</li>
             </ol>
             <p className="text-xs text-muted-foreground mt-3 font-semibold">
-              Bu adımlar, güvenlik ve stabilite açısından kritik öneme sahiptir ve genellikle özel backend geliştirme uzmanlığı gerektirir.
+              Bu adımlar, uygulamanızın güvenliği, stabilitesi ve Instagram platform politikalarına uyumu açısından kritik öneme sahiptir ve genellikle özel backend geliştirme uzmanlığı gerektirir.
             </p>
+             <Button variant="outline" size="sm" asChild className="mt-3">
+              <a href="https://developers.facebook.com/docs/instagram-api" target="_blank" rel="noopener noreferrer">
+                Instagram Graph API Dokümanları <ExternalLink className="ml-2 h-3 w-3" />
+              </a>
+            </Button>
           </div>
         </CardContent>
       </Card>
     </div>
   );
 }
-
-    

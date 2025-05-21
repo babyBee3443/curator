@@ -65,75 +65,83 @@ export async function generateFullPostAction(): Promise<FullPostGenerationOutput
   }
 }
 
-export async function sharePostToInstagramAction(post: Post, accessToken?: string): Promise<{ success: boolean; message: string }> {
+export async function sharePostToInstagramAction(post: Post, accessToken?: string): Promise<{ success: boolean; message: string; instagramPostId?: string }> {
   console.log(`Instagram'da paylaşılmak üzere alınan gönderi (ID: ${post.id})`);
 
   if (!accessToken) {
     console.error(`Gönderi (ID: ${post.id}) paylaşılamadı: Erişim Belirteci (Access Token) eksik.`);
-    throw new Error(`Erişim Belirteci (Access Token) eksik. Lütfen Ayarlar sayfasından belirtecinizi girin (Sadece Test Amaçlı!).`);
+    throw new Error(`Erişim Belirteci (Access Token) eksik. Lütfen Ayarlar sayfasından belirtecinizi girin.`);
   }
 
-  console.log(`Kullanılacak Erişim Belirteci (SİMÜLASYON - İlk 10 karakter): ${accessToken.substring(0, 10)}...`);
-  console.log('Gönderi verileri (SİMÜLASYON):', {
-    caption: post.caption,
-    imageUrl: post.imageUrl ? post.imageUrl.substring(0, 60) + '...' : 'No image URL', // Data URI'ler çok uzun olabilir
-    hashtags: post.hashtags,
-  });
+  if (post.imageUrl.startsWith('data:image')) {
+    console.warn(`Gönderi (ID: ${post.id}): Resim URL'si bir veri URI'si. Instagram Graph API doğrudan veri URI'lerini kabul etmez. API çağrısı muhtemelen başarısız olacaktır. Resmin herkese açık bir URL olması gerekir.`);
+    // Kullanıcıya bu durum hakkında bir mesaj döndürebiliriz, ancak şimdilik sadece konsola yazıyoruz.
+    // Gerçek bir uygulamada bu durum kullanıcıya net bir şekilde bildirilmeli.
+  }
 
-  // SİMÜLASYON: Burada gerçek Instagram API çağrısı yapılırdı.
-  // Örnek:
-  // const instagramApiUrl = `https://graph.facebook.com/v19.0/me/media`;
-  // const response = await fetch(instagramApiUrl, {
-  //   method: 'POST',
-  //   headers: { 'Content-Type': 'application/json' },
-  //   body: JSON.stringify({
-  //     image_url: post.imageUrl, // veya video_url
-  //     caption: `${post.caption}\n\n${post.hashtags.map(h => `#${h}`).join(' ')}`,
-  //     access_token: accessToken,
-  //   }),
-  // });
-  // const data = await response.json();
-  // if (!response.ok || data.error) { throw new Error(data.error?.message || 'Instagram API hatası'); }
-  // Ardından media_publish çağrısı gerekebilir.
+  const fullCaption = `${post.caption}\n\n${post.hashtags.map(h => `#${h.trim()}`).join(' ')}`;
+  const instagramApiVersion = 'v19.0'; // Güncel API versiyonunu kontrol edin
 
-  await new Promise(resolve => setTimeout(resolve, 1500)); // API çağrısını simüle etmek için gecikme
-  const isSuccess = Math.random() > 0.1; // %90 başarı şansı simülasyonu
+  try {
+    console.log(`[TEST AMAÇLI - GÜVENSİZ] Instagram API çağrısı deneniyor. Belirteç: ${accessToken.substring(0,10)}...`);
 
-  if (isSuccess) {
-    console.log(`Gönderi (ID: ${post.id}) Instagram'a başarıyla gönderildi (SİMÜLASYON).`);
-    return { success: true, message: `Gönderi (ID: ${post.id}) başarıyla paylaşıldı (Simülasyon). Belirteç kullanıldı.` };
-  } else {
-    console.error(`Gönderi (ID: ${post.id}) Instagram'a gönderilemedi (SİMÜLASYON).`);
-    throw new Error(`Gönderi (ID: ${post.id}) paylaşılamadı. Ağ hatası veya API sorunu olabilir (Simülasyon).`);
+    // Adım 1: Medya Konteyneri Oluşturma
+    // ÖNEMLİ: image_url HERKESE AÇIK BİR URL OLMALIDIR. Veri URI'si ise bu çağrı BAŞARISIZ OLACAKTIR.
+    const mediaContainerParams = new URLSearchParams({
+      image_url: post.imageUrl,
+      caption: fullCaption,
+      access_token: accessToken,
+    });
+
+    const mediaContainerResponse = await fetch(`https://graph.facebook.com/${instagramApiVersion}/me/media`, {
+      method: 'POST',
+      body: mediaContainerParams,
+    });
+
+    const mediaContainerData = await mediaContainerResponse.json();
+
+    if (!mediaContainerResponse.ok || mediaContainerData.error) {
+      console.error('Instagram medya konteyneri oluşturma hatası:', mediaContainerData.error);
+      throw new Error(`Instagram API Hatası (Medya Konteyneri): ${mediaContainerData.error?.message || 'Bilinmeyen hata'}`);
+    }
+
+    const creationId = mediaContainerData.id;
+    if (!creationId) {
+      throw new Error('Instagram API: Medya konteyneri ID alınamadı.');
+    }
+    console.log('Instagram medya konteyneri oluşturuldu, ID:', creationId);
+
+    // Adım 2: Medya Konteynerini Yayınlama
+    const publishParams = new URLSearchParams({
+      creation_id: creationId,
+      access_token: accessToken,
+    });
+
+    const publishResponse = await fetch(`https://graph.facebook.com/${instagramApiVersion}/me/media_publish`, {
+      method: 'POST',
+      body: publishParams,
+    });
+
+    const publishData = await publishResponse.json();
+
+    if (!publishResponse.ok || publishData.error) {
+      console.error('Instagram medya yayınlama hatası:', publishData.error);
+      throw new Error(`Instagram API Hatası (Yayınlama): ${publishData.error?.message || 'Bilinmeyen hata'}`);
+    }
+    
+    const instagramPostId = publishData.id;
+    console.log(`Gönderi (ID: ${post.id}) Instagram'a başarıyla gönderildi (GERÇEK API DENEMESİ). Instagram Post ID: ${instagramPostId}`);
+    return { 
+      success: true, 
+      message: `Gönderi (ID: ${post.id}) başarıyla Instagram'da yayınlandı (TEST). Instagram Post ID: ${instagramPostId}`,
+      instagramPostId: instagramPostId
+    };
+
+  } catch (error) {
+    console.error(`Gönderi (ID: ${post.id}) Instagram'a gönderilemedi (GERÇEK API DENEMESİ):`, error);
+    if (error instanceof Error) {
+      return { success: false, message: `Gönderi paylaşılamadı (TEST): ${error.message}` };
+    }
+    return { success: false, message: `Gönderi paylaşılamadı (TEST): Bilinmeyen bir API hatası oluştu.` };
   }
 }
-
-
-// --- Instagram Bağlantısı için ESKİ Yer Tutucu Eylemler (Artık doğrudan Ayarlar sayfasında yönetiliyor) ---
-// Bu eylemler artık Ayarlar sayfasındaki istemci tarafı mantıkla ele alındığı için kaldırılabilir veya yorum satırına alınabilir.
-// Şimdilik referans olarak bırakıyorum ama aktif olarak kullanılmıyorlar.
-
-// export async function getInstagramConnectionStatusAction(): Promise<{ connected: boolean; username: string | null; error?: string }> {
-//   console.warn('getInstagramConnectionStatusAction çağrıldı - BU BİR SİMÜLASYONDUR.');
-//   return { connected: false, username: null };
-// }
-
-// export async function initiateInstagramOAuthAction(): Promise<{ redirectUrl?: string; error?: string }> {
-//   console.warn('initiateInstagramOAuthAction çağrıldı - BU BİR SİMÜLASYONDUR.');
-//   return { error: 'Instagram OAuth akışı başlatma özelliği henüz tam olarak uygulanmadı.' };
-// }
-
-// export async function completeInstagramOAuthAction(code: string): Promise<{ success: boolean; username?: string; error?: string }> {
-//   console.warn('completeInstagramOAuthAction çağrıldı - BU BİR SİMÜLASYONDUR.');
-//   if (code) {
-//     return { success: true, username: 'simulated_user' };
-//   }
-//   return { success: false, error: 'Geçersiz yetkilendirme kodu (Simülasyon).' };
-// }
-
-// export async function disconnectInstagramAction(): Promise<{ success: boolean; error?: string }> {
-//   console.warn('disconnectInstagramAction çağrıldı - BU BİR SİMÜLASYONDUR.');
-//   return { success: true };
-// }
-
-    
