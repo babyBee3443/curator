@@ -5,26 +5,26 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-// Button importu kaldırıldı, artık kullanılmayacak
-import { CalendarDays, Hash, Image as ImageIcon, Loader2, Sparkles } from 'lucide-react'; // Share2, AlertTriangle, Mail ikonları kaldırıldı
+import { Button } from '@/components/ui/button';
+import { CalendarDays, Hash, Image as ImageIcon, Loader2, Sparkles, Send } from 'lucide-react';
 import type { Post } from '@/types';
-// useToast importu kaldırıldı, artık kullanılmayacak
-// sharePostToInstagramAction ve sendContentByEmailAction importları kaldırıldı
+import { useToast } from '@/hooks/use-toast';
+import { sendPostByEmail } from '@/lib/actions';
+
+const EMAIL_RECIPIENT_KEY = 'emailRecipient_cosmosCurator';
 
 interface PostPreviewCardProps {
   post: Partial<Post>;
   title?: string;
   isLoadingImage?: boolean;
-  showShareButton?: boolean; // Bu prop artık bir işlev görmeyecek ama uyumluluk için kalabilir
+  showShareButton?: boolean;
 }
-
-// INSTAGRAM_TOKEN_KEY ve EMAIL_RECIPIENT_KEY sabitleri kaldırıldı
 
 export function PostPreviewCard({ post, title = "Gönderi Önizlemesi", isLoadingImage = false, showShareButton = false }: PostPreviewCardProps) {
   const { id, imageUrl, imageHint, caption, hashtags, simulatedPostTime } = post;
   const [clientFormattedTime, setClientFormattedTime] = useState<string | null>(null);
-  // isSharing ve isSendingEmail state'leri kaldırıldı
-  // const { toast } = useToast(); // toast kaldırıldı
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (simulatedPostTime instanceof Date && !isNaN(simulatedPostTime.getTime())) {
@@ -52,8 +52,54 @@ export function PostPreviewCard({ post, title = "Gönderi Önizlemesi", isLoadin
 
   const displayImageUrl = isLoadingImage ? "https://placehold.co/1080x1080.png?text=Resim+Yükleniyor..." : imageUrl;
 
-  // handleShareToInstagram fonksiyonu kaldırıldı
-  // handleSendEmail fonksiyonu kaldırıldı
+  const handleSendEmail = async () => {
+    if (!post || !post.id || !post.topic || !post.caption || !post.hashtags || !post.imageUrl) {
+       toast({
+        title: 'Eksik Gönderi Bilgisi',
+        description: 'E-posta göndermek için tüm gönderi detayları gereklidir.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const recipientEmail = localStorage.getItem(EMAIL_RECIPIENT_KEY);
+    if (!recipientEmail) {
+      toast({
+        title: 'Alıcı E-posta Eksik',
+        description: 'Lütfen Ayarlar sayfasından bir alıcı e-posta adresi kaydedin.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsSendingEmail(true);
+    try {
+      const result = await sendPostByEmail(post as Post, recipientEmail);
+      if (result.success) {
+        toast({
+          title: 'E-posta Gönderildi',
+          description: result.message,
+          className: 'bg-green-600 text-white border-green-700',
+        });
+      } else {
+        toast({
+          title: 'E-posta Gönderilemedi',
+          description: result.message,
+          variant: 'destructive',
+          duration: 10000, // Hata mesajları daha uzun süre kalsın
+        });
+      }
+    } catch (error) {
+      toast({
+        title: 'E-posta Gönderme Hatası',
+        description: error instanceof Error ? error.message : 'Bilinmeyen bir hata oluştu.',
+        variant: 'destructive',
+        duration: 10000,
+      });
+    }
+    setIsSendingEmail(false);
+  };
+
 
   return (
     <Card className="w-full max-w-md shadow-xl flex flex-col">
@@ -111,14 +157,25 @@ export function PostPreviewCard({ post, title = "Gönderi Önizlemesi", isLoadin
           </div>
         )}
       </CardContent>
-      <CardFooter className="text-xs text-muted-foreground flex flex-col items-start gap-2 pt-4">
+      <CardFooter className="text-xs text-muted-foreground flex flex-col items-start gap-3 pt-4">
         {simulatedPostTime && (
             <div className="flex items-center gap-1">
                 <CalendarDays className="h-4 w-4" />
                 Planlanan Tarih: {clientFormattedTime ? clientFormattedTime : 'Zaman yükleniyor...'}
             </div>
         )}
-        {/* Paylaşım butonları buradan kaldırıldı */}
+        {showShareButton && caption && (
+            <Button 
+              onClick={handleSendEmail} 
+              disabled={isSendingEmail}
+              variant="outline"
+              size="sm"
+              className="w-full"
+            >
+              {isSendingEmail ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+              İçeriği E-posta İle Gönder
+            </Button>
+        )}
       </CardFooter>
     </Card>
   );

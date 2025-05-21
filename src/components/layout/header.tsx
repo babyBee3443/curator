@@ -1,7 +1,7 @@
 
 import Link from 'next/link';
 import { CosmosCuratorLogo } from '@/components/icons/logo';
-import { Rocket, Home } from 'lucide-react'; // Settings ikonu kaldırıldı
+import { Rocket, Home, Settings } from 'lucide-react';
 
 export function AppHeader() {
   return (
@@ -20,7 +20,12 @@ export function AppHeader() {
               Ana Sayfa
             </a>
           </Link>
-          {/* Ayarlar linki kaldırıldı */}
+          <Link href="/settings" legacyBehavior passHref>
+            <a className="flex items-center text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
+              <Settings className="h-4 w-4 mr-1.5" />
+              Ayarlar
+            </a>
+          </Link>
         </nav>
       </div>
     </header>
