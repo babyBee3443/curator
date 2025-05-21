@@ -104,7 +104,7 @@ export async function sharePostToInstagramAction(post: Post, accessToken?: strin
     if (!mediaContainerResponse.ok || mediaContainerData.error) {
       const errorMessage = mediaContainerData.error?.message || `API isteği başarısız oldu (HTTP ${mediaContainerResponse.status}). Resim URL'sinin herkese açık olduğundan ve belirtecinizin doğru izinlere sahip olduğundan emin olun. Detaylar için konsolu kontrol edin.`;
       console.error('[GERÇEK API DENEMESİ] Instagram medya konteyneri oluşturma hatası:', mediaContainerData.error || `HTTP ${mediaContainerResponse.status}`);
-      return { success: false, message: `Instagram API Hatası (Medya Konteyneri): ${errorMessage}` };
+      return { success: false, message: `Instagram API Hatası (Medya Konteyneri - HTTP ${mediaContainerResponse.status}): ${errorMessage}` };
     }
 
     const creationId = mediaContainerData.id;
@@ -133,7 +133,7 @@ export async function sharePostToInstagramAction(post: Post, accessToken?: strin
     if (!publishResponse.ok || publishData.error) {
       const errorMessage = publishData.error?.message || `API isteği başarısız oldu (HTTP ${publishResponse.status}). Detaylar için konsolu kontrol edin.`;
       console.error('[GERÇEK API DENEMESİ] Instagram medya yayınlama hatası:', publishData.error || `HTTP ${publishResponse.status}`);
-      return { success: false, message: `Instagram API Hatası (Yayınlama): ${errorMessage}` };
+      return { success: false, message: `Instagram API Hatası (Yayınlama - HTTP ${publishResponse.status}): ${errorMessage}` };
     }
     
     const instagramPostId = publishData.id;
@@ -158,18 +158,26 @@ export async function sharePostToInstagramAction(post: Post, accessToken?: strin
 }
 
 export async function sendContentByEmailAction(post: Post, recipientEmail: string): Promise<{ success: boolean; message: string }> {
+  console.log('--- [E-POSTA GÖNDERME DENEMESİ BAŞLANGICI] ---');
+  console.log(`Alınan gönderi ID: ${post.id}, Alıcı: ${recipientEmail}`);
+
   const senderEmail = process.env.EMAIL_SENDER_ADDRESS;
   const appPassword = process.env.EMAIL_APP_PASSWORD;
 
+  console.log(`Okunan EMAIL_SENDER_ADDRESS: ${senderEmail ? senderEmail.substring(0,3) + '...' : 'BULUNAMADI'}`);
+  console.log(`Okunan EMAIL_APP_PASSWORD: ${appPassword ? 'MEVCUT (gizli)' : 'BULUNAMADI'}`);
+
+
   if (!senderEmail || !appPassword) {
-    console.error('[E-POSTA GÖNDERME HATASI] Gönderen e-posta adresi veya uygulama şifresi ortam değişkenlerinde tanımlanmamış. Lütfen .env.local dosyasını kontrol edin.');
+    const errorMessage = 'E-posta gönderimi yapılandırma hatası: Gönderen e-posta adresi (EMAIL_SENDER_ADDRESS) veya uygulama şifresi (EMAIL_APP_PASSWORD) ortam değişkenlerinde tanımlanmamış. Lütfen projenizin ana dizinindeki .env.local dosyasını doğru yapılandırdığınızdan ve sunucuyu yeniden başlattığınızdan emin olun.';
+    console.error(`[E-POSTA GÖNDERME HATASI] ${errorMessage}`);
     return {
       success: false,
-      message: 'E-posta gönderimi yapılandırma hatası: Gönderen bilgileri eksik. Lütfen .env.local dosyasını doğru yapılandırdığınızdan emin olun.',
+      message: errorMessage,
     };
   }
 
-  console.log(`[E-POSTA GÖNDERME DENEMESİ] Alınan gönderi (ID: ${post.id}), Alıcı: ${recipientEmail}, Gönderen: ${senderEmail}`);
+  console.log(`Gönderen e-posta: ${senderEmail}, Uygulama Şifresi: (gizli)`);
 
   const transporter = nodemailer.createTransport({
     service: 'gmail',
@@ -182,28 +190,24 @@ export async function sendContentByEmailAction(post: Post, recipientEmail: strin
   const emailSubject = `Kozmos Küratörü Yeni Gönderi İçeriği: ${post.topic}`;
   let emailBody = `Merhaba,\n\nYapay zeka sizin için yeni bir Instagram gönderi içeriği hazırladı:\n\n`;
   emailBody += `Konu: ${post.topic}\n\n`;
-  emailBody += `Başlık Önerisi:\n${post.caption}\n\n`; // Yapay zeka notu zaten başlığın içinde
+  emailBody += `Başlık Önerisi:\n${post.caption}\n\n`;
   emailBody += `Hashtag Önerileri:\n${post.hashtags.map(h => `#${h}`).join(' ')}\n\n`;
   emailBody += `Resim URL'si (veya Veri URI'si):\n${post.imageUrl}\n\n`;
   emailBody += `Saygılarımızla,\nKozmos Küratörü (Yapay Zeka Asistanı)`;
 
   const mailOptions = {
-    from: senderEmail,
+    from: `"Kozmos Küratörü AI" <${senderEmail}>`,
     to: recipientEmail,
     subject: emailSubject,
     text: emailBody,
+    // html: `<p>${emailBody.replace(/\n/g, '<br>')}</p>` // İsterseniz HTML formatında da gönderebilirsiniz
   };
 
   try {
-    console.log("--- E-POSTA GÖNDERME DENEMESİ BAŞLANGICI ---");
-    console.log("Gönderen:", senderEmail);
-    console.log("Alıcı:", recipientEmail);
-    console.log("Konu:", emailSubject);
-    // console.log("İçerik:\n", emailBody); // Şifre hassasiyeti nedeniyle tüm body'yi loglamayalım.
-
+    console.log(`E-posta gönderme deneniyor. Alıcı: ${recipientEmail}, Konu: "${emailSubject}"`);
     const info = await transporter.sendMail(mailOptions);
-    console.log('E-posta gönderildi: %s', info.messageId);
-    console.log("--- E-POSTA GÖNDERME DENEMESİ SONU ---");
+    console.log('E-posta başarıyla gönderildi. Message ID: %s', info.messageId);
+    console.log("--- [E-POSTA GÖNDERME DENEMESİ SONU - BAŞARILI] ---");
     return {
       success: true,
       message: `E-posta başarıyla ${recipientEmail} adresine gönderildi. (Gönderen: ${senderEmail})`,
@@ -213,18 +217,22 @@ export async function sendContentByEmailAction(post: Post, recipientEmail: strin
      let errorMessage = 'E-posta gönderme denemesi sırasında bir hata oluştu.';
     if (error instanceof Error) {
         errorMessage += ` Detay: ${error.message}`;
-    }
-    if (typeof error === 'object' && error !== null && 'code' in error) {
-        const nodemailerError = error as { code?: string; responseCode?: number; command?: string };
-        if (nodemailerError.code === 'EAUTH' || nodemailerError.responseCode === 535) {
-            errorMessage += ' Kimlik doğrulama hatası. Lütfen e-posta adresi ve uygulama şifresini kontrol edin. Google hesap ayarlarınızda "Daha az güvenli uygulama erişimi"nin açık olduğundan veya geçerli bir Uygulama Şifresi kullandığınızdan emin olun.';
-        } else if (nodemailerError.code === 'ECONNECTION' || nodemailerError.responseCode === 500) {
-            errorMessage += ' Bağlantı hatası. İnternet bağlantınızı veya e-posta sunucusu ayarlarını kontrol edin.';
+        // @ts-ignore
+        if (error.code === 'EAUTH' || error.responseCode === 535) {
+            // @ts-ignore
+            errorMessage += ` Kimlik doğrulama hatası (Kod: ${error.code || error.responseCode}). Lütfen e-posta adresi ve uygulama şifresini kontrol edin. Google hesap ayarlarınızda "Daha az güvenli uygulama erişimi"nin açık olduğundan veya geçerli bir Uygulama Şifresi kullandığınızdan emin olun.`;
+        // @ts-ignore
+        } else if (error.code === 'ECONNECTION' || error.responseCode === 500) {
+             // @ts-ignore
+            errorMessage += ` Bağlantı hatası (Kod: ${error.code || error.responseCode}). İnternet bağlantınızı veya e-posta sunucusu ayarlarını kontrol edin.`;
         }
     }
+    console.log("--- [E-POSTA GÖNDERME DENEMESİ SONU - BAŞARISIZ] ---");
     return {
       success: false,
       message: errorMessage,
     };
   }
 }
+
+    

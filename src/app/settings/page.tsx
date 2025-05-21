@@ -123,6 +123,7 @@ export default function SettingsPage() {
             </CardTitle>
             <CardDescription>
               Meta Geliştirici Portalından aldığınız Uzun Ömürlü Kullanıcı Erişim Belirtecinizi (Access Token) buraya girerek GERÇEK Instagram API'sine gönderi paylaşımını test edebilirsiniz.
+              <strong className="block mt-2 text-destructive">UYARI: Bu özellik veri URI'si formatındaki (mevcut yapay zeka tarafından üretilenler gibi) resimlerle ÇALIŞMAYACAKTIR. Resmin herkese açık bir URL olması gerekir.</strong>
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -147,7 +148,7 @@ export default function SettingsPage() {
             {!isLoading && isConnected && username && (
               <div className="space-y-3 p-4 border border-green-500 rounded-md bg-green-500/10">
                 <p className="text-green-400 font-semibold">
-                  Instagram hesabına yerel belirteç ile bağlı (TEST): <span className="font-bold text-green-300">@{username}</span>
+                  Instagram hesabına yerel belirteç ile bağlı: <span className="font-bold text-green-300">@{username}</span> (Bu sadece bir SİMÜLASYONDUR ve yerel belirteç kullanır)
                 </p>
                 <p className="text-xs text-yellow-500">UYARI: Bu bağlantı sadece yerel depolama kullanır ve GÜVENLİ DEĞİLDİR.</p>
                 <Button variant="outline" onClick={handleDisconnectInstagram} disabled={isLoading} className="border-red-500 text-red-500 hover:bg-red-500/10">
@@ -182,7 +183,7 @@ export default function SettingsPage() {
                   className="bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 text-white hover:opacity-90 w-full"
                 >
                   {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Instagram className="mr-2 h-5 w-5" />}
-                  Erişim Belirtecini Kaydet ve Bağlan (Sadece Yerel Test İçin)
+                  Erişim Belirtecini Kaydet ve Bağlan
                 </Button>
               </div>
             )}
@@ -225,18 +226,30 @@ export default function SettingsPage() {
               <AlertTitle className="text-blue-700 font-bold">E-posta Gönderimi Hakkında (Nodemailer ile Gerçek Deneme)</AlertTitle>
               <AlertDescription className="text-blue-600/90 space-y-2">
                 <p>Bu bölüm, yapay zeka tarafından oluşturulan gönderi içeriklerinin size e-posta ile gönderilmesini **denemek** içindir. "İçeriği E-posta İle Gönder" butonuna tıkladığınızda, sistem Nodemailer kütüphanesini kullanarak e-posta göndermeye çalışacaktır.</p>
-                <p className="font-semibold">Gerçek E-posta Gönderimi İçin Gerekenler:</p>
-                <ol className="list-decimal list-inside text-xs pl-4">
-                  <li><strong>Gönderen E-posta ve Uygulama Şifresi:</strong> Projenizin ana dizininde `.env.local` adında bir dosya oluşturun.</li>
-                  <li>İçine aşağıdaki gibi kendi gönderen e-posta adresinizi ve Google Uygulama Şifrenizi ekleyin:
-                    <pre className="mt-1 p-2 bg-black/20 rounded text-xs whitespace-pre-wrap"><code>EMAIL_SENDER_ADDRESS=getdusbox@gmail.com{'\n'}EMAIL_APP_PASSWORD=sizin_google_uygulama_sifreniz</code></pre>
-                    (Verdiğiniz şifre örnek olarak `qdti jdwa wxpd tkwl` idi.)
+                <p className="font-semibold">Gerçek E-posta Gönderimi İçin Yapılması Gerekenler:</p>
+                <ol className="list-decimal list-inside text-xs pl-4 space-y-1.5">
+                  <li>
+                    <strong>`.env.local` Dosyası Oluşturun:</strong> Projenizin **ana dizininde** (yani `package.json` dosyasının bulunduğu yerde) `.env.local` adında bir dosya oluşturun. Eğer zaten varsa, bu adımı atlayın.
                   </li>
-                   <li>**ÖNEMLİ:** `.env.local` dosyasını asla versiyon kontrol sistemlerine (örn: Git) göndermeyin.</li>
-                  <li><strong>Google Hesap Ayarları:</strong> Gönderen Gmail hesabınızda "Daha az güvenli uygulama erişimi" ayarının aktif olması veya geçerli bir "Uygulama Şifresi" kullanılması gerekmektedir. Google, standart şifrelerle bu tür erişimlere izin vermeyebilir.</li>
-                  <li><strong>Nodemailer Kurulumu:</strong> Bu özellik için `nodemailer` kütüphanesi projeye eklendi. Değişikliklerden sonra `npm install` veya `yarn install` çalıştırmayı unutmayın.</li>
+                  <li>
+                    <strong>Ortam Değişkenlerini Ekleyin:</strong> `.env.local` dosyasının içine aşağıdaki satırları **tam olarak bu şekilde** ekleyin ve kendi bilgilerinizle değiştirin:
+                    <pre className="mt-1 p-2 bg-black/20 rounded text-xs whitespace-pre-wrap"><code>EMAIL_SENDER_ADDRESS=getdusbox@gmail.com{'\n'}EMAIL_APP_PASSWORD=qdti jdwa wxpd tkwl</code></pre>
+                    (Yukarıdaki değerler, sizin sağladığınız örneklerdir. `EMAIL_APP_PASSWORD` kısmına kendi 16 haneli Google Uygulama Şifrenizi girin.)
+                  </li>
+                   <li><strong>ÖNEMLİ:</strong> `.env.local` dosyasını **ASLA** Git gibi versiyon kontrol sistemlerine (GitHub, GitLab vb.) göndermeyin. Genellikle `.gitignore` dosyanızda `*.local` veya `/.env*.local` gibi bir satır bulunur, bu da bu tür dosyaların kazara yüklenmesini engeller.</li>
+                  <li>
+                    <strong>Google Hesap Ayarları:</strong> `EMAIL_SENDER_ADDRESS` olarak belirttiğiniz Gmail hesabınızda:
+                    <ul className="list-disc list-inside pl-4 text-xs">
+                        <li>İki Adımlı Doğrulama'nın etkinleştirilmiş olması gerekir.</li>
+                        <li>Google Hesap ayarlarınızdan bir "Uygulama Şifresi" oluşturmanız ve `.env.local` dosyasındaki `EMAIL_APP_PASSWORD` kısmına bu 16 haneli şifreyi girmeniz gerekir. Normal Gmail şifreniz burada çalışmayacaktır.</li>
+                    </ul>
+                  </li>
+                  <li><strong>Nodemailer Kurulumu:</strong> Bu özellik için `nodemailer` kütüphanesi `package.json` dosyanıza eklenmişti. Eğer `node_modules` klasörünüzde bir sorun olduğunu düşünüyorsanız, projenizin ana dizininde `npm install` (veya `yarn install`) komutunu tekrar çalıştırabilirsiniz.</li>
+                  <li>
+                    <strong>Sunucuyu Yeniden Başlatın:</strong> `.env.local` dosyasını oluşturduktan veya değiştirdikten sonra, değişikliklerin Next.js tarafından algılanması için geliştirme sunucunuzu **durdurup yeniden başlatmanız ZORUNLUDUR**. (Örn: Terminalde Ctrl+C yapıp sonra tekrar `npm run dev` veya `yarn dev`).
+                  </li>
                 </ol>
-                <p>Bu ayarlar doğru yapıldığında, uygulama belirttiğiniz alıcıya e-posta göndermeyi deneyecektir. Hata olması durumunda bildirim alacaksınız.</p>
+                <p className="mt-2">Bu ayarlar doğru yapıldığında, uygulama belirttiğiniz alıcıya e-posta göndermeyi deneyecektir. Hata olması durumunda bildirim alacaksınız ve detaylar için tarayıcı konsolunu ve sunucu terminalindeki logları kontrol edebilirsiniz.</p>
               </AlertDescription>
             </Alert>
 
@@ -270,3 +283,5 @@ export default function SettingsPage() {
     </div>
   );
 }
+
+    
