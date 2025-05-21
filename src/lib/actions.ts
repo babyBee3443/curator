@@ -4,11 +4,12 @@
 import type { Post } from '@/types';
 import nodemailer from 'nodemailer';
 
-// Ortam değişkenlerini kontrol et (Next.js normalde .env.local'i otomatik yükler)
-// Ancak, bu eylemin çağrıldığı bağlamda kesin emin olmak için loglayalım.
-console.log('[ACTIONS.TS] Ortam Değişkenleri Kontrolü:');
-console.log(`[ACTIONS.TS] process.env.EMAIL_SENDER_ADDRESS okunuyor: "${process.env.EMAIL_SENDER_ADDRESS ? process.env.EMAIL_SENDER_ADDRESS.substring(0,3) + '...' : 'BULUNAMADI'}" (tip: ${typeof process.env.EMAIL_SENDER_ADDRESS})`);
-console.log(`[ACTIONS.TS] process.env.EMAIL_APP_PASSWORD okunuyor: "${process.env.EMAIL_APP_PASSWORD ? 'DEĞER MEVCUT (gizli)' : 'BULUNAMADI'}" (tip: ${typeof process.env.EMAIL_APP_PASSWORD})`);
+// Bu loglar, dosya her yüklendiğinde çalışır ve process.env'nin o andaki durumunu gösterir.
+// Ancak server action çalıştığında process.env farklı bir değere sahip olabilir.
+// Bu yüzden asıl kontrolü sendPostByEmail fonksiyonu içinde yapacağız.
+console.log('[ACTIONS.TS] Dosya Yüklendi - Ortam Değişkenleri Kontrolü (Başlangıç):');
+console.log(`[ACTIONS.TS] process.env.EMAIL_SENDER_ADDRESS (başlangıç): "${process.env.EMAIL_SENDER_ADDRESS ? process.env.EMAIL_SENDER_ADDRESS.substring(0,3) + '...' : 'BULUNAMADI'}"`);
+console.log(`[ACTIONS.TS] process.env.EMAIL_APP_PASSWORD (başlangıç): "${process.env.EMAIL_APP_PASSWORD ? 'DEĞER MEVCUT (gizli)' : 'BULUNAMADI'}"`);
 
 
 export interface FullPostGenerationOutput {
@@ -67,9 +68,10 @@ export async function generateFullPostAction(): Promise<FullPostGenerationOutput
 }
 
 export async function sharePostToInstagramAction(post: Post): Promise<{ success: boolean; message: string; instagramPostId?: string }> {
-  console.log(`Instagram'da paylaşılmak üzere alınan gönderi (SİMÜLASYON - ID: ${post.id})`);
+  console.log(`[sharePostToInstagramAction] Instagram'da paylaşılmak üzere alınan gönderi (SİMÜLASYON - ID: ${post.id})`);
+  
   const simulatedMessage = `Gönderi (ID: ${post.id}) için Instagram paylaşım simülasyonu tetiklendi. (Gerçek API çağrısı yapılmadı.)`;
-  console.log(simulatedMessage);
+  console.log(`[sharePostToInstagramAction] ${simulatedMessage}`);
   
   return { 
     success: true,
@@ -82,22 +84,24 @@ export async function sendPostByEmail(
   post: Post,
   recipientEmail: string
 ): Promise<{ success: boolean; message: string }> {
+  console.log(`[sendPostByEmail] Fonksiyon çağrıldı. Alıcı: ${recipientEmail}`);
+  
+  // Ortam değişkenlerini burada, fonksiyon her çağrıldığında KESİNLİKLE kontrol et
   const senderEmail = process.env.EMAIL_SENDER_ADDRESS;
   const senderAppPassword = process.env.EMAIL_APP_PASSWORD;
 
-  console.log(`[sendPostByEmail] Başlatıldı. Alıcı: ${recipientEmail}`);
-  console.log(`[sendPostByEmail] Okunan Gönderen E-posta: ${senderEmail ? senderEmail.substring(0,3) + '...' : 'BULUNAMADI'}`);
-  console.log(`[sendPostByEmail] Okunan Uygulama Şifresi: ${senderAppPassword ? 'MEVCUT (gizli)' : 'BULUNAMADI'}`);
+  console.log(`[sendPostByEmail] Okunan process.env.EMAIL_SENDER_ADDRESS: "${senderEmail}", tipi: ${typeof senderEmail}`);
+  console.log(`[sendPostByEmail] Okunan process.env.EMAIL_APP_PASSWORD: "${senderAppPassword ? 'DEĞER MEVCUT (gizli)' : 'BULUNAMADI veya BOŞ'}", tipi: ${typeof senderAppPassword}`);
 
   if (!senderEmail || !senderAppPassword) {
     const errorMessage = 'E-posta gönderimi yapılandırma hatası: Gönderen bilgileri eksik. Lütfen .env.local dosyasını doğru yapılandırdığınızdan ve sunucuyu yeniden başlattığınızdan emin olun.';
-    console.error(`[sendPostByEmail] Hata: ${errorMessage}`);
+    console.error(`[sendPostByEmail] HATA: ${errorMessage}. senderEmail: ${senderEmail}, senderAppPassword: ${senderAppPassword ? 'Mevcut' : 'Mevcut Değil/Boş'}`);
     return { success: false, message: errorMessage };
   }
 
   if (!recipientEmail || !recipientEmail.includes('@')) {
     const errorMessage = 'Geçersiz alıcı e-posta adresi.';
-    console.error(`[sendPostByEmail] Hata: ${errorMessage}`);
+    console.error(`[sendPostByEmail] HATA: ${errorMessage}`);
     return { success: false, message: errorMessage };
   }
 
@@ -147,8 +151,8 @@ export async function sendPostByEmail(
     if (error instanceof Error) {
       errorMessage = `E-posta gönderilemedi: ${error.message}. Gmail ayarlarınızı ve uygulama şifrenizi kontrol edin.`;
        // @ts-ignore
-      if (error.responseCode === 535) { // Authentication credentials invalid
-        errorMessage = 'E-posta gönderilemedi: Gmail kimlik doğrulama hatası (535). Uygulama şifrenizi ve gönderen e-posta adresini kontrol edin. Google hesabınızda 2 Adımlı Doğrulama\'nın etkin ve bir Uygulama Şifresi oluşturulmuş olması gerekir.';
+      if (error.responseCode === 535 || (error.message && error.message.toLowerCase().includes('credentials'))) { 
+        errorMessage = 'E-posta gönderilemedi: Gmail kimlik doğrulama hatası (535 - Geçersiz kimlik bilgileri). Uygulama şifrenizi ve gönderen e-posta adresini kontrol edin. Google hesabınızda 2 Adımlı Doğrulama\'nın etkin ve bir Uygulama Şifresi oluşturulmuş olması gerekir.';
       }
     }
     return { success: false, message: errorMessage };
@@ -160,3 +164,4 @@ import { suggestSingleContentIdea as suggestSingleContentIdeaFlow } from '@/ai/f
 import { generatePostCaption as generatePostCaptionFlow } from '@/ai/flows/generate-post-captions';
 import { optimizePostHashtags as optimizePostHashtagsFlow } from '@/ai/flows/optimize-post-hashtags';
 import { generatePostImage as generatePostImageFlow } from '@/ai/flows/generate-post-image';
+
