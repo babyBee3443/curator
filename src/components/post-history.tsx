@@ -1,3 +1,4 @@
+
 import type { Post } from '@/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -31,7 +32,12 @@ export function PostHistory({ posts }: PostHistoryProps) {
           <ScrollArea className="h-[600px] w-full">
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 p-1">
               {posts.slice().reverse().map((post) => ( // Show newest first
-                <PostPreviewCard key={post.id} post={post} title="Onaylanmış Gönderi" />
+                <PostPreviewCard 
+                  key={post.id} 
+                  post={post} 
+                  title="Onaylanmış Gönderi" 
+                  showShareButton={true} 
+                />
               ))}
             </div>
           </ScrollArea>

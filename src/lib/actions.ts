@@ -4,6 +4,7 @@ import { suggestSingleContentIdea as suggestSingleContentIdeaFlow, type SuggestS
 import { generatePostCaption as generatePostCaptionFlow, type GeneratePostCaptionInput, type GeneratePostCaptionOutput } from '@/ai/flows/generate-post-captions';
 import { optimizePostHashtags as optimizePostHashtagsFlow, type OptimizePostHashtagsInput, type OptimizePostHashtagsOutput } from '@/ai/flows/optimize-post-hashtags';
 import { generatePostImage as generatePostImageFlow, type GeneratePostImageInput, type GeneratePostImageOutput } from '@/ai/flows/generate-post-image';
+import type { Post } from '@/types';
 
 export interface FullPostGenerationOutput {
   topic: string;
@@ -16,6 +17,7 @@ export interface FullPostGenerationOutput {
 export async function generateFullPostAction(): Promise<FullPostGenerationOutput> {
   console.log('generateFullPostAction başlatıldı.');
   try {
+    // 1. İçerik Fikri Üret
     const idea = await suggestSingleContentIdeaFlow();
     console.log('Fikir üretildi:', idea);
     if (!idea.topic || !idea.keyInformation) {
@@ -23,9 +25,9 @@ export async function generateFullPostAction(): Promise<FullPostGenerationOutput
       throw new Error('Yapay zeka geçerli bir içerik fikri üretemedi.');
     }
 
-    // Resim ve başlık üretimini paralelleştiriyoruz.
+    // 2. Resim ve Başlık Üretimini Paralelleştir
     const [imageResult, captionResult] = await Promise.all([
-      generatePostImageFlow({ prompt: idea.topic }), // SADECE KONUYU GÖNDER
+      generatePostImageFlow({ prompt: idea.topic }), // SADECE KISA KONUYU GÖNDER
       generatePostCaptionFlow({ topic: idea.topic, keyInformation: idea.keyInformation })
     ]);
     console.log('Resim sonucu:', imageResult);
@@ -40,6 +42,7 @@ export async function generateFullPostAction(): Promise<FullPostGenerationOutput
       throw new Error('Yapay zeka bir başlık üretemedi.');
     }
 
+    // 3. Hashtag Optimizasyonu
     const hashtagsResult = await optimizePostHashtagsFlow({ postCaption: captionResult.caption, topic: idea.topic });
     console.log('Hashtag sonucu:', hashtagsResult);
 
@@ -83,5 +86,31 @@ export async function generateImageAction(input: GeneratePostImageInput): Promis
   } catch (error) {
     console.error('Resim oluşturulurken hata oluştu:', error);
     throw new Error('Yapay zeka resim oluştururken bir sorunla karşılaştı. Lütfen isteminizi kontrol edip tekrar deneyin veya farklı bir konu deneyin.');
+  }
+}
+
+// Yeni Placeholder Eylem: Instagram'da Paylaşım Simülasyonu
+export async function sharePostToInstagramAction(post: Post): Promise<{ success: boolean; message: string }> {
+  console.log(`Instagram'da paylaşılmak üzere alınan gönderi (ID: ${post.id}):`, {
+    caption: post.caption,
+    imageUrl: post.imageUrl ? post.imageUrl.substring(0, 50) + '...' : 'No image URL', // Sadece başını logla
+    hashtags: post.hashtags,
+  });
+
+  // Burada gerçek Instagram API çağrısı yapılacaktır.
+  // Şimdilik sadece bir simülasyon yapıyoruz.
+  // TODO: Gerçek Instagram API entegrasyonunu buraya ekleyin.
+
+  // Simülasyon için rastgele bir gecikme ve sonuç
+  await new Promise(resolve => setTimeout(resolve, 1500));
+
+  const isSuccess = Math.random() > 0.2; // %80 başarı şansı simülasyonu
+
+  if (isSuccess) {
+    console.log(`Gönderi (ID: ${post.id}) Instagram'a başarıyla gönderildi (SİMÜLASYON).`);
+    return { success: true, message: `Gönderi (ID: ${post.id}) Instagram'a başarıyla gönderildi (SİMÜLASYON).` };
+  } else {
+    console.error(`Gönderi (ID: ${post.id}) Instagram'a gönderilemedi (SİMÜLASYON).`);
+    throw new Error(`Gönderi (ID: ${post.id}) Instagram'a gönderilemedi. Lütfen daha sonra tekrar deneyin (SİMÜLASYON).`);
   }
 }
