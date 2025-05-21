@@ -12,7 +12,7 @@ import {ai} from '@/ai/genkit';
 import {z}  from 'genkit';
 
 const GeneratePostImageInputSchema = z.object({
-  prompt: z.string().describe('Resim oluşturmak için kullanılacak metin istemi (örneğin gönderi konusu veya anahtar bilgiler).'),
+  prompt: z.string().describe('Resim oluşturmak için kullanılacak KISA konu başlığı (örneğin sadece "Kara Delikler" veya "Mars Yüzeyi").'),
 });
 export type GeneratePostImageInput = z.infer<typeof GeneratePostImageInputSchema>;
 
@@ -35,10 +35,9 @@ const generatePostImageFlow = ai.defineFlow(
   async (input) => {
     const { media } = await ai.generate({
       model: 'googleai/gemini-2.0-flash-exp', // Resim oluşturma için bu model kullanılmalıdır.
-      prompt: `Konu: "${input.prompt}". Bu konuyu anlatan, bilim, teknoloji veya uzay temalı, canlı, çekici bir Instagram gönderi resmi. Fotoğraf gerçekçiliğinde veya dijital sanat tarzında olabilir. ÖNEMLİ: Oluşturulacak resimde KESİNLİKLE herhangi bir yazı, harf, kelime, sayı veya logo bulunmamalıdır. Tamamen saf bir görsel olmalıdır.`,
+      prompt: `"${input.prompt}" konusunu ifade eden, bilim, teknoloji veya uzay temalı, canlı ve yüksek kaliteli bir görsel oluştur. Fotoğraf gerçekçiliğinde veya dijital sanat tarzında olabilir. ÇOK ÖNEMLİ: Bu görselde KESİNLİKLE hiçbir metin, yazı, harf, rakam, sayı veya logo OLMAMALIDIR. Sadece ve sadece görsel öğeler içermelidir. Tamamen yazısız, saf bir resim.`,
       config: {
         responseModalities: ['IMAGE', 'TEXT'], // Hem resim hem de metin modaliteleri gereklidir.
-        // Gerekirse güvenlik ayarları eklenebilir.
         // safetySettings: [
         //   {
         //     category: 'HARM_CATEGORY_DANGEROUS_CONTENT',
@@ -51,7 +50,6 @@ const generatePostImageFlow = ai.defineFlow(
     if (!media || !media.url) {
       throw new Error('Resim oluşturulamadı veya geçersiz resim verisi alındı.');
     }
-    // Gemini 2.0 Flash Exp genellikle image/png döndürür.
     return { imageUrl: media.url };
   }
 );

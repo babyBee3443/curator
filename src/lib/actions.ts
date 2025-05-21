@@ -5,10 +5,6 @@ import { generatePostCaption as generatePostCaptionFlow, type GeneratePostCaptio
 import { optimizePostHashtags as optimizePostHashtagsFlow, type OptimizePostHashtagsInput, type OptimizePostHashtagsOutput } from '@/ai/flows/optimize-post-hashtags';
 import { generatePostImage as generatePostImageFlow, type GeneratePostImageInput, type GeneratePostImageOutput } from '@/ai/flows/generate-post-image';
 
-// Eski suggestIdeasAction fonksiyonu artık kullanılmayacak, bu yüzden onu kaldırabiliriz veya yorum satırına alabiliriz.
-// export async function suggestIdeasAction(): Promise<SuggestContentIdeasOutput> { ... }
-
-
 export interface FullPostGenerationOutput {
   topic: string;
   keyInformation: string;
@@ -29,7 +25,7 @@ export async function generateFullPostAction(): Promise<FullPostGenerationOutput
 
     // Resim ve başlık üretimini paralelleştiriyoruz.
     const [imageResult, captionResult] = await Promise.all([
-      generatePostImageFlow({ prompt: `${idea.topic} - ${idea.keyInformation}` }), // Daha zengin bir prompt için birleştir
+      generatePostImageFlow({ prompt: idea.topic }), // SADECE KONUYU GÖNDER
       generatePostCaptionFlow({ topic: idea.topic, keyInformation: idea.keyInformation })
     ]);
     console.log('Resim sonucu:', imageResult);
@@ -56,8 +52,6 @@ export async function generateFullPostAction(): Promise<FullPostGenerationOutput
     };
   } catch (error) {
     console.error('Tam gönderi oluşturulurken hata oluştu:', error);
-    // Kullanıcıya daha açıklayıcı bir hata mesajı döndürebiliriz.
-    // Hata mesajının Türkçe olmasına dikkat edelim.
     if (error instanceof Error) {
         throw new Error(`Yapay zeka tam gönderi oluştururken bir sorunla karşılaştı: ${error.message}`);
     }
@@ -65,8 +59,6 @@ export async function generateFullPostAction(): Promise<FullPostGenerationOutput
   }
 }
 
-
-// Diğer eylemler olduğu gibi kalabilir.
 export async function generateCaptionAction(input: GeneratePostCaptionInput): Promise<GeneratePostCaptionOutput> {
   try {
     return await generatePostCaptionFlow(input);
