@@ -1,11 +1,21 @@
 
 'use server';
-import { suggestSingleContentIdea as suggestSingleContentIdeaFlow, type SuggestSingleContentIdeaOutput } from '@/ai/flows/suggest-content-ideas';
-import { generatePostCaption as generatePostCaptionFlow, type GeneratePostCaptionInput, type GeneratePostCaptionOutput } from '@/ai/flows/generate-post-captions';
-import { optimizePostHashtags as optimizePostHashtagsFlow, type OptimizePostHashtagsInput, type OptimizePostHashtagsOutput } from '@/ai/flows/optimize-post-hashtags';
-import { generatePostImage as generatePostImageFlow, type GeneratePostImageInput, type GeneratePostImageOutput } from '@/ai/flows/generate-post-image';
+
+// .env.local dosyasını açıkça yüklemeyi dene
+import { config as dotenvConfig } from 'dotenv';
+import path from 'path';
+// Projenin kök dizinindeki .env.local dosyasını hedefle
+const envPath = path.resolve(process.cwd(), '.env.local');
+dotenvConfig({ path: envPath });
+// --- explicit load sonu ---
+
 import type { Post } from '@/types';
 import nodemailer from 'nodemailer';
+import { suggestSingleContentIdea as suggestSingleContentIdeaFlow } from '@/ai/flows/suggest-content-ideas';
+import { generatePostCaption as generatePostCaptionFlow } from '@/ai/flows/generate-post-captions';
+import { optimizePostHashtags as optimizePostHashtagsFlow } from '@/ai/flows/optimize-post-hashtags';
+import { generatePostImage as generatePostImageFlow } from '@/ai/flows/generate-post-image';
+
 
 export interface FullPostGenerationOutput {
   topic: string;
@@ -159,13 +169,15 @@ export async function sharePostToInstagramAction(post: Post, accessToken?: strin
 
 export async function sendContentByEmailAction(post: Post, recipientEmail: string): Promise<{ success: boolean; message: string }> {
   console.log('--- [E-POSTA GÖNDERME DENEMESİ BAŞLANGICI] ---');
+  console.log(`.env.local yolu: ${envPath}`);
   console.log(`Alınan gönderi ID: ${post.id}, Alıcı: ${recipientEmail}`);
 
   const senderEmail = process.env.EMAIL_SENDER_ADDRESS;
   const appPassword = process.env.EMAIL_APP_PASSWORD;
 
-  console.log(`Okunan EMAIL_SENDER_ADDRESS: ${senderEmail ? senderEmail.substring(0,3) + '...' : 'BULUNAMADI'}`);
-  console.log(`Okunan EMAIL_APP_PASSWORD: ${appPassword ? 'MEVCUT (gizli)' : 'BULUNAMADI'}`);
+  // Ortam değişkenlerinin doğru okunup okunmadığını kontrol etmek için ek loglar
+  console.log(`Okunan EMAIL_SENDER_ADDRESS (actions.ts): ${senderEmail ? senderEmail.substring(0,3) + '...' : 'BULUNAMADI'}`);
+  console.log(`Okunan EMAIL_APP_PASSWORD (actions.ts): ${appPassword ? 'MEVCUT (gizli)' : 'BULUNAMADI'}`);
 
 
   if (!senderEmail || !appPassword) {
@@ -177,7 +189,7 @@ export async function sendContentByEmailAction(post: Post, recipientEmail: strin
     };
   }
 
-  console.log(`Gönderen e-posta: ${senderEmail}, Uygulama Şifresi: (gizli)`);
+  console.log(`Gönderen e-posta (actions.ts): ${senderEmail}, Uygulama Şifresi (actions.ts): (gizli)`);
 
   const transporter = nodemailer.createTransport({
     service: 'gmail',
@@ -200,20 +212,19 @@ export async function sendContentByEmailAction(post: Post, recipientEmail: strin
     to: recipientEmail,
     subject: emailSubject,
     text: emailBody,
-    // html: `<p>${emailBody.replace(/\n/g, '<br>')}</p>` // İsterseniz HTML formatında da gönderebilirsiniz
   };
 
   try {
-    console.log(`E-posta gönderme deneniyor. Alıcı: ${recipientEmail}, Konu: "${emailSubject}"`);
+    console.log(`E-posta gönderme deneniyor (actions.ts). Alıcı: ${recipientEmail}, Konu: "${emailSubject}"`);
     const info = await transporter.sendMail(mailOptions);
-    console.log('E-posta başarıyla gönderildi. Message ID: %s', info.messageId);
-    console.log("--- [E-POSTA GÖNDERME DENEMESİ SONU - BAŞARILI] ---");
+    console.log('E-posta başarıyla gönderildi (actions.ts). Message ID: %s', info.messageId);
+    console.log("--- [E-POSTA GÖNDERME DENEMESİ SONU - BAŞARILI (actions.ts)] ---");
     return {
       success: true,
       message: `E-posta başarıyla ${recipientEmail} adresine gönderildi. (Gönderen: ${senderEmail})`,
     };
   } catch (error) {
-    console.error('[E-POSTA GÖNDERME DENEMESİ] Hata:', error);
+    console.error('[E-POSTA GÖNDERME DENEMESİ (actions.ts)] Hata:', error);
      let errorMessage = 'E-posta gönderme denemesi sırasında bir hata oluştu.';
     if (error instanceof Error) {
         errorMessage += ` Detay: ${error.message}`;
@@ -227,12 +238,10 @@ export async function sendContentByEmailAction(post: Post, recipientEmail: strin
             errorMessage += ` Bağlantı hatası (Kod: ${error.code || error.responseCode}). İnternet bağlantınızı veya e-posta sunucusu ayarlarını kontrol edin.`;
         }
     }
-    console.log("--- [E-POSTA GÖNDERME DENEMESİ SONU - BAŞARISIZ] ---");
+    console.log("--- [E-POSTA GÖNDERME DENEMESİ SONU - BAŞARISIZ (actions.ts)] ---");
     return {
       success: false,
       message: errorMessage,
     };
   }
 }
-
-    
