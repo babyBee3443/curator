@@ -12,13 +12,18 @@ interface PostPreviewCardProps {
   title?: string;
 }
 
-export function PostPreviewCard({ post, title = "Post Preview" }: PostPreviewCardProps) {
+export function PostPreviewCard({ post, title = "Gönderi Önizlemesi" }: PostPreviewCardProps) {
   const { imageUrl, imageHint, caption, hashtags, simulatedPostTime } = post;
   const [clientFormattedTime, setClientFormattedTime] = useState<string | null>(null);
 
   useEffect(() => {
     if (simulatedPostTime instanceof Date && !isNaN(simulatedPostTime.getTime())) {
-      setClientFormattedTime(new Date(simulatedPostTime).toLocaleString());
+      // Attempt to use Turkish locale, fallback to default if not critical path
+      try {
+        setClientFormattedTime(new Date(simulatedPostTime).toLocaleString('tr-TR'));
+      } catch (e) {
+        setClientFormattedTime(new Date(simulatedPostTime).toLocaleString());
+      }
     } else {
       setClientFormattedTime(null); // Reset if not a valid date
     }
@@ -37,24 +42,24 @@ export function PostPreviewCard({ post, title = "Post Preview" }: PostPreviewCar
           <div className="aspect-square w-full overflow-hidden rounded-md border bg-muted">
             <Image
               src={imageUrl}
-              alt={caption || 'Instagram post image'}
+              alt={caption || 'Instagram gönderi resmi'}
               width={1080}
               height={1080}
               className="object-cover w-full h-full"
-              data-ai-hint={imageHint || "technology space"}
+              data-ai-hint={imageHint || "teknoloji uzay"}
             />
           </div>
         )}
         {caption && (
           <div>
-            <h4 className="font-semibold mb-1 text-foreground">Caption:</h4>
+            <h4 className="font-semibold mb-1 text-foreground">Başlık:</h4>
             <p className="text-sm text-muted-foreground whitespace-pre-line leading-relaxed">{caption}</p>
           </div>
         )}
         {hashtags && hashtags.length > 0 && (
           <div>
             <h4 className="font-semibold mb-2 text-foreground flex items-center gap-1">
-              <Hash className="h-4 w-4" /> Hashtags:
+              <Hash className="h-4 w-4" /> Hashtag'ler:
             </h4>
             <div className="flex flex-wrap gap-2">
               {hashtags.map((tag, index) => (
@@ -69,7 +74,7 @@ export function PostPreviewCard({ post, title = "Post Preview" }: PostPreviewCar
       {simulatedPostTime instanceof Date && !isNaN(simulatedPostTime.getTime()) && (
         <CardFooter className="text-xs text-muted-foreground flex items-center gap-1">
           <CalendarDays className="h-4 w-4" />
-          Scheduled for: {clientFormattedTime ? clientFormattedTime : 'Loading time...'}
+          Planlanan Tarih: {clientFormattedTime ? clientFormattedTime : 'Zaman yükleniyor...'}
         </CardFooter>
       )}
     </Card>

@@ -7,7 +7,7 @@ export function CosmosCuratorLogo(props: SVGProps<SVGSVGElement>) {
       viewBox="0 0 200 50"
       width="150"
       height="37.5"
-      aria-label="Cosmos Curator Logo"
+      aria-label="Kozmos Küratörü Logosu"
       {...props}
     >
       <defs>
@@ -24,7 +24,7 @@ export function CosmosCuratorLogo(props: SVGProps<SVGSVGElement>) {
         fontWeight="bold"
         fill="url(#logoGradient)"
       >
-        Cosmos Curator
+        Kozmos Küratörü
       </text>
       {/* Optional: A small abstract icon */}
       <path d="M180 15 a5 5 0 0 1 0 20 a5 5 0 0 1 0 -20 M175 25 h10 M180 20 v10" stroke="hsl(var(--accent))" strokeWidth="1.5" fill="none"/>

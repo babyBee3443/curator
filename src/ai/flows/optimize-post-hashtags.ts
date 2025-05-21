@@ -1,12 +1,11 @@
-// OptimizePostHashtags.ts
 'use server';
 
 /**
- * @fileOverview This file defines a Genkit flow to optimize hashtags for an Instagram post.
+ * @fileOverview Bu dosya, bir Instagram gönderisi için hashtag'leri optimize etmek üzere bir Genkit akışı tanımlar.
  *
- * - `optimizePostHashtags` - The main function to call to get optimized hashtags.
- * - `OptimizePostHashtagsInput` - The input type for the `optimizePostHashtags` function.
- * - `OptimizePostHashtagsOutput` - The output type for the `optimizePostHashtags` function.
+ * - `optimizePostHashtags` - Optimize edilmiş hashtag'leri almak için çağrılacak ana işlev.
+ * - `OptimizePostHashtagsInput` - `optimizePostHashtags` işlevi için giriş türü.
+ * - `OptimizePostHashtagsOutput` - `optimizePostHashtags` işlevi için çıkış türü.
  */
 
 import {ai} from '@/ai/genkit';
@@ -15,17 +14,17 @@ import {z} from 'genkit';
 const OptimizePostHashtagsInputSchema = z.object({
   postCaption: z
     .string()
-    .describe('The caption of the Instagram post for which hashtags need to be optimized.'),
+    .describe('Hashtag\'lerinin optimize edilmesi gereken Instagram gönderisinin başlığı.'),
   topic: z
     .string()
-    .describe('The topic of the post. e.g. science, technology, space.'),
+    .describe('Gönderinin konusu. örneğin bilim, teknoloji, uzay.'),
 });
 export type OptimizePostHashtagsInput = z.infer<typeof OptimizePostHashtagsInputSchema>;
 
 const OptimizePostHashtagsOutputSchema = z.object({
   hashtags: z
     .array(z.string())
-    .describe('An array of optimized hashtags for the given Instagram post.'),
+    .describe('Verilen Instagram gönderisi için optimize edilmiş hashtag dizisi.'),
 });
 
 export type OptimizePostHashtagsOutput = z.infer<typeof OptimizePostHashtagsOutputSchema>;
@@ -38,14 +37,14 @@ const optimizePostHashtagsPrompt = ai.definePrompt({
   name: 'optimizePostHashtagsPrompt',
   input: {schema: OptimizePostHashtagsInputSchema},
   output: {schema: OptimizePostHashtagsOutputSchema},
-  prompt: `You are an expert in social media marketing, specializing in hashtag optimization for Instagram.
-  Given the following Instagram post caption and topic, provide a list of relevant and high-engagement hashtags.
-  The hashtags should be directly related to the content of the post and trending within the specified topic.
+  prompt: `Siz, Instagram için hashtag optimizasyonu konusunda uzmanlaşmış bir sosyal medya pazarlama uzmanısınız.
+  Aşağıdaki Instagram gönderi başlığı ve konusu verildiğinde, ilgili ve yüksek etkileşimli hashtag'lerin bir listesini sağlayın.
+  Hashtag'ler gönderinin içeriğiyle doğrudan ilgili olmalı ve belirtilen konuda trend olmalıdır.
 
-  Topic: {{{topic}}}
-  Post Caption: {{{postCaption}}}
+  Konu: {{{topic}}}
+  Gönderi Başlığı: {{{postCaption}}}
 
-  Return ONLY an array of hashtags.  Do not include any other text in your response.
+  SADECE bir hashtag dizisi döndürün. Yanıtınıza başka bir metin eklemeyin.
   `,
 });
 

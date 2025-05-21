@@ -1,23 +1,23 @@
-// use server'
+'use server';
 
 /**
- * @fileOverview Content suggestion flow for generating Instagram post ideas in science, technology, and space.
+ * @fileOverview Bilim, teknoloji ve uzay alanlarında Instagram gönderi fikirleri üretmek için içerik öneri akışı.
  *
- * - suggestContentIdeas - A function that suggests content ideas.
- * - SuggestContentIdeasInput - The input type for the suggestContentIdeas function.
- * - SuggestContentIdeasOutput - The return type for the suggestContentIdeas function.
+ * - suggestContentIdeas - İçerik fikirleri öneren bir işlev.
+ * - SuggestContentIdeasInput - suggestContentIdeas işlevi için giriş türü.
+ * - SuggestContentIdeasOutput - suggestContentIdeas işlevi için dönüş türü.
  */
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-const SuggestContentIdeasInputSchema = z.object({}).describe('No input required.');
+const SuggestContentIdeasInputSchema = z.object({}).describe('Giriş gerekmez.');
 export type SuggestContentIdeasInput = z.infer<typeof SuggestContentIdeasInputSchema>;
 
 const SuggestContentIdeasOutputSchema = z.object({
   ideas: z
     .array(z.string())
-    .describe('An array of content ideas related to science, technology, and space.'),
+    .describe('Bilim, teknoloji ve uzay ile ilgili içerik fikirleri dizisi.'),
 });
 export type SuggestContentIdeasOutput = z.infer<typeof SuggestContentIdeasOutputSchema>;
 
@@ -29,12 +29,12 @@ const prompt = ai.definePrompt({
   name: 'suggestContentIdeasPrompt',
   input: {schema: SuggestContentIdeasInputSchema},
   output: {schema: SuggestContentIdeasOutputSchema},
-  prompt: `You are an AI assistant designed to provide engaging content ideas for an Instagram account focused on science, technology, and space.
+  prompt: `Siz, bilim, teknoloji ve uzay odaklı bir Instagram hesabı için ilgi çekici içerik fikirleri sağlamak üzere tasarlanmış bir yapay zeka asistanısınız.
 
-  Provide a list of trending topics and innovative ideas suitable for Instagram posts. The ideas should be formatted as a list.
-  Consider the current events, recent discoveries, and popular discussions in these fields.
+  Instagram gönderileri için uygun, trend olan konuların ve yenilikçi fikirlerin bir listesini sağlayın. Fikirler liste halinde biçimlendirilmelidir.
+  Bu alanlardaki güncel olayları, son keşifleri ve popüler tartışmaları dikkate alın.
 
-  Output the response as a numbered list of concise and engaging content ideas. Focus on ideas that are likely to generate high engagement on Instagram.
+  Yanıtı, kısa ve ilgi çekici içerik fikirlerinin numaralandırılmış bir listesi olarak verin. Instagram'da yüksek etkileşim oluşturması muhtemel fikirlere odaklanın.
   `,
 });
 

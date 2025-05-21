@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Cosmos Curator',
-  description: 'AI-powered content management for science, technology, and space Instagram posts.',
+  title: 'Kozmos Küratörü',
+  description: 'Bilim, teknoloji ve uzay Instagram gönderileri için yapay zeka destekli içerik yönetimi.',
 };
 
 export default function RootLayout({
@@ -24,7 +24,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
+    <html lang="tr" className="dark">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}>
         {children}
         <Toaster />

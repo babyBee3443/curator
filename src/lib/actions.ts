@@ -7,7 +7,7 @@ export async function suggestIdeasAction(): Promise<SuggestContentIdeasOutput> {
   try {
     return await suggestContentIdeasFlow({});
   } catch (error) {
-    console.error('Error suggesting content ideas:', error);
+    console.error('İçerik fikirleri önerilirken hata oluştu:', error);
     return { ideas: [] };
   }
 }
@@ -16,8 +16,8 @@ export async function generateCaptionAction(input: GeneratePostCaptionInput): Pr
   try {
     return await generatePostCaptionFlow(input);
   } catch (error) {
-    console.error('Error generating post caption:', error);
-    return { caption: 'Error generating caption. Please try again.' };
+    console.error('Gönderi başlığı oluşturulurken hata oluştu:', error);
+    return { caption: 'Başlık oluşturulurken hata. Lütfen tekrar deneyin.' };
   }
 }
 
@@ -25,7 +25,7 @@ export async function optimizeHashtagsAction(input: OptimizePostHashtagsInput): 
   try {
     return await optimizePostHashtagsFlow(input);
   } catch (error) {
-    console.error('Error optimizing hashtags:', error);
+    console.error('Hashtag\'ler optimize edilirken hata oluştu:', error);
     return { hashtags: [] };
   }
 }

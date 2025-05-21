@@ -23,7 +23,7 @@ export default function HomePage() {
         }));
         setApprovedPosts(parsedPosts);
       } catch (error) {
-        console.error("Failed to parse posts from local storage:", error);
+        console.error("Gönderiler yerel depolamadan ayrıştırılamadı:", error);
         setApprovedPosts([]);
       }
     }
@@ -41,10 +41,10 @@ export default function HomePage() {
       <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8 container mx-auto">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground">
-            Content Dashboard
+            İçerik Paneli
           </h1>
           <p className="text-muted-foreground">
-            Manage your AI-powered Instagram content creation process.
+            Yapay zeka destekli Instagram içerik oluşturma sürecinizi yönetin.
           </p>
         </div>
         <Separator className="my-4" />
@@ -54,7 +54,7 @@ export default function HomePage() {
       <footer className="py-6 md:px-8 md:py-0 border-t mt-auto">
         <div className="container flex flex-col items-center justify-between gap-4 md:h-20 md:flex-row">
           <p className="text-balance text-center text-sm leading-loose text-muted-foreground md:text-left">
-            Built by AI for Cosmos Curator.
+            Kozmos Küratörü için Yapay Zeka tarafından oluşturuldu.
           </p>
         </div>
       </footer>

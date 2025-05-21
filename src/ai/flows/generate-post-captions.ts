@@ -1,23 +1,23 @@
 'use server';
 /**
- * @fileOverview Generates engaging and informative captions for posts.
+ * @fileOverview Gönderiler için ilgi çekici ve bilgilendirici başlıklar oluşturur.
  *
- * - generatePostCaption - A function that generates a post caption.
- * - GeneratePostCaptionInput - The input type for the generatePostCaption function.
- * - GeneratePostCaptionOutput - The return type for the generatePostCaption function.
+ * - generatePostCaption - Gönderi başlığı oluşturan bir işlev.
+ * - GeneratePostCaptionInput - generatePostCaption işlevi için giriş türü.
+ * - GeneratePostCaptionOutput - generatePostCaption işlevi için dönüş türü.
  */
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const GeneratePostCaptionInputSchema = z.object({
-  topic: z.string().describe('The topic of the post.'),
-  keyInformation: z.string().describe('Key information to include in the post.'),
+  topic: z.string().describe('Gönderinin konusu.'),
+  keyInformation: z.string().describe('Gönderiye dahil edilecek anahtar bilgiler.'),
 });
 export type GeneratePostCaptionInput = z.infer<typeof GeneratePostCaptionInputSchema>;
 
 const GeneratePostCaptionOutputSchema = z.object({
-  caption: z.string().describe('The generated caption for the post.'),
+  caption: z.string().describe('Gönderi için oluşturulan başlık.'),
 });
 export type GeneratePostCaptionOutput = z.infer<typeof GeneratePostCaptionOutputSchema>;
 
@@ -29,16 +29,16 @@ const prompt = ai.definePrompt({
   name: 'generatePostCaptionPrompt',
   input: {schema: GeneratePostCaptionInputSchema},
   output: {schema: GeneratePostCaptionOutputSchema},
-  prompt: `You are an AI assistant designed to create engaging and informative captions for Instagram posts.
+  prompt: `Siz, Instagram gönderileri için ilgi çekici ve bilgilendirici başlıklar oluşturmak üzere tasarlanmış bir yapay zeka asistanısınız.
 
-  Your goal is to generate a caption that includes an opening, key information, and a call to action.
-  The post focuses on the topic: {{{topic}}}.
+  Amacınız, bir açılış, anahtar bilgiler ve bir eylem çağrısı içeren bir başlık oluşturmaktır.
+  Gönderi şu konuya odaklanmaktadır: {{{topic}}}.
 
-  Incorporate this key information: {{{keyInformation}}}
+  Şu anahtar bilgileri dahil edin: {{{keyInformation}}}
 
-  The caption should be concise, informative, and encourage interaction.
-  Include relevant emojis.
-  End with a call to action such as "What do you think?", "Let us know in the comments!", or similar.
+  Başlık kısa, bilgilendirici olmalı ve etkileşimi teşvik etmelidir.
+  İlgili emojileri ekleyin.
+  "Ne düşünüyorsunuz?", "Yorumlarda bize bildirin!" veya benzeri bir eylem çağrısıyla bitirin.
   `,
 });
 
