@@ -13,6 +13,7 @@ import { PostPreviewCard } from './post-preview-card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Lightbulb, Send, ThumbsDown, ThumbsUp, Sparkles, Tag, CheckCircle, XCircle } from 'lucide-react';
+import { Badge } from '@/components/ui/badge'; // Added missing import
 
 interface PostCreatorProps {
   onPostApproved: (post: Post) => void;
@@ -123,7 +124,7 @@ export function PostCreator({ onPostApproved }: PostCreatorProps) {
     topic, keyInformation, caption, hashtags, 
     imageUrl: 'https://placehold.co/1080x1080.png', 
     imageHint: topic.toLowerCase().split(" ").slice(0,2).join(" ") || "science technology",
-    simulatedPostTime: currentPostTime || new Date()
+    simulatedPostTime: currentPostTime,
   };
 
   return (

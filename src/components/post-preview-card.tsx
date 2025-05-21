@@ -1,3 +1,6 @@
+'use client';
+
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -11,6 +14,15 @@ interface PostPreviewCardProps {
 
 export function PostPreviewCard({ post, title = "Post Preview" }: PostPreviewCardProps) {
   const { imageUrl, imageHint, caption, hashtags, simulatedPostTime } = post;
+  const [clientFormattedTime, setClientFormattedTime] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (simulatedPostTime instanceof Date && !isNaN(simulatedPostTime.getTime())) {
+      setClientFormattedTime(new Date(simulatedPostTime).toLocaleString());
+    } else {
+      setClientFormattedTime(null); // Reset if not a valid date
+    }
+  }, [simulatedPostTime]);
 
   return (
     <Card className="w-full max-w-md shadow-xl">
@@ -54,10 +66,10 @@ export function PostPreviewCard({ post, title = "Post Preview" }: PostPreviewCar
           </div>
         )}
       </CardContent>
-      {simulatedPostTime && (
+      {simulatedPostTime instanceof Date && !isNaN(simulatedPostTime.getTime()) && (
         <CardFooter className="text-xs text-muted-foreground flex items-center gap-1">
           <CalendarDays className="h-4 w-4" />
-          Scheduled for: {new Date(simulatedPostTime).toLocaleString()}
+          Scheduled for: {clientFormattedTime ? clientFormattedTime : 'Loading time...'}
         </CardFooter>
       )}
     </Card>
