@@ -1,14 +1,18 @@
 
 'use server';
 
-// Bu loglar, dosya her yüklendiğinde çalışır ve process.env'nin o andaki durumunu gösterir.
-console.log('[ACTIONS.TS] Dosya Yüklendi - Ortam Değişkenleri Kontrolü (Başlangıç):');
-console.log(`[ACTIONS.TS] process.env.EMAIL_SENDER_ADDRESS (başlangıç): "${process.env.EMAIL_SENDER_ADDRESS ? process.env.EMAIL_SENDER_ADDRESS.substring(0,3) + '...' : 'BULUNAMADI'}"`);
-console.log(`[ACTIONS.TS] process.env.EMAIL_APP_PASSWORD (başlangıç): "${process.env.EMAIL_APP_PASSWORD ? 'DEĞER MEVCUT (gizli)' : 'BULUNAMADI'}"`);
-
+// .env.local dosyasını yüklemeyi dene (Next.js normalde bunu yapar ama emin olmak için)
+import { config as dotenvConfig } from 'dotenv';
+dotenvConfig(); // Bu, projenin kök dizinindeki .env ve .env.local dosyalarını yükler
 
 import type { Post } from '@/types';
 import nodemailer from 'nodemailer';
+
+// Bu loglar, dosya her yüklendiğinde çalışır ve process.env'nin o andaki durumunu gösterir.
+// dotenvConfig() çağrısından sonraki durumu görmek önemlidir.
+console.log('[ACTIONS.TS] MODÜL YÜKLENDİ - Ortam Değişkenleri Kontrolü:');
+console.log(`[ACTIONS.TS] > process.env.EMAIL_SENDER_ADDRESS: "${process.env.EMAIL_SENDER_ADDRESS ? process.env.EMAIL_SENDER_ADDRESS.substring(0,3) + '...' : 'BULUNAMADI'}"`);
+console.log(`[ACTIONS.TS] > process.env.EMAIL_APP_PASSWORD: "${process.env.EMAIL_APP_PASSWORD ? 'DEĞER MEVCUT (gizli)' : 'BULUNAMADI'}"`);
 
 
 export interface FullPostGenerationOutput {
@@ -20,12 +24,12 @@ export interface FullPostGenerationOutput {
 }
 
 export async function generateFullPostAction(): Promise<FullPostGenerationOutput> {
-  console.log('generateFullPostAction başlatıldı.');
+  console.log('[ACTIONS.TS] generateFullPostAction başlatıldı.');
   try {
     const idea = await suggestSingleContentIdeaFlow();
-    console.log('Fikir üretildi:', idea);
+    console.log('[ACTIONS.TS] Fikir üretildi:', idea);
     if (!idea.topic || !idea.keyInformation) {
-      console.error('Geçersiz fikir üretildi.');
+      console.error('[ACTIONS.TS] Geçersiz fikir üretildi.');
       throw new Error('Yapay zeka geçerli bir içerik fikri üretemedi.');
     }
 
@@ -35,20 +39,20 @@ export async function generateFullPostAction(): Promise<FullPostGenerationOutput
       generatePostImageFlow({ prompt: imagePrompt }),
       generatePostCaptionFlow({ topic: idea.topic, keyInformation: idea.keyInformation })
     ]);
-    console.log('Resim sonucu:', imageResult);
-    console.log('Başlık sonucu:', captionResult);
+    console.log('[ACTIONS.TS] Resim sonucu:', imageResult);
+    console.log('[ACTIONS.TS] Başlık sonucu:', captionResult);
 
     if (!imageResult.imageUrl) {
-      console.error('Resim üretilemedi.');
+      console.error('[ACTIONS.TS] Resim üretilemedi.');
       throw new Error('Yapay zeka bir resim üretemedi.');
     }
     if (!captionResult.caption) {
-      console.error('Başlık üretilemedi.');
+      console.error('[ACTIONS.TS] Başlık üretilemedi.');
       throw new Error('Yapay zeka bir başlık üretemedi.');
     }
 
     const hashtagsResult = await optimizePostHashtagsFlow({ postCaption: captionResult.caption, topic: idea.topic });
-    console.log('Hashtag sonucu:', hashtagsResult);
+    console.log('[ACTIONS.TS] Hashtag sonucu:', hashtagsResult);
 
     return {
       topic: idea.topic,
@@ -58,7 +62,7 @@ export async function generateFullPostAction(): Promise<FullPostGenerationOutput
       imageUrl: imageResult.imageUrl,
     };
   } catch (error) {
-    console.error('Tam gönderi oluşturulurken hata oluştu:', error);
+    console.error('[ACTIONS.TS] Tam gönderi oluşturulurken hata oluştu:', error);
     if (error instanceof Error) {
         throw new Error(`Yapay zeka tam gönderi oluştururken bir sorunla karşılaştı: ${error.message}`);
     }
@@ -75,13 +79,13 @@ export async function sendPostByEmail(
   const senderEmail = process.env.EMAIL_SENDER_ADDRESS;
   const senderAppPassword = process.env.EMAIL_APP_PASSWORD;
 
-  console.log(`[sendPostByEmail] 1. process.env.EMAIL_SENDER_ADDRESS DEĞERİ: "${senderEmail}" (tip: ${typeof senderEmail})`);
-  console.log(`[sendPostByEmail] 2. process.env.EMAIL_APP_PASSWORD DEĞERİ: "${senderAppPassword ? 'DEĞER MEVCUT (gizli)' : 'BULUNAMADI veya BOŞ'}" (tip: ${typeof senderAppPassword})`);
+  console.log(`[sendPostByEmail] Ortam Değişkenleri Kontrolü (Fonksiyon İçi):`);
+  console.log(`[sendPostByEmail] > senderEmail DEĞERİ: "${senderEmail}" (tip: ${typeof senderEmail})`);
+  console.log(`[sendPostByEmail] > senderAppPassword DEĞERİ: "${senderAppPassword ? 'DEĞER MEVCUT (gizli)' : 'BULUNAMADI veya BOŞ'}" (tip: ${typeof senderAppPassword})`);
 
   if (!senderEmail || !senderAppPassword) {
-    const errorMessage = 'E-posta gönderimi yapılandırma hatası: Gönderen bilgileri eksik. Lütfen .env.local dosyasını doğru yapılandırdığınızdan ve sunucuyu yeniden başlattığınızdan emin olun.';
-    console.error(`[sendPostByEmail] HATA: ${errorMessage}.`);
-    console.error(`[sendPostByEmail] HATA DETAYI - senderEmail: ${senderEmail}, senderAppPassword var mı: ${!!senderAppPassword}`);
+    const errorMessage = 'E-posta gönderimi yapılandırma hatası: Gönderen bilgileri eksik. Lütfen .env.local dosyasını doğru yapılandırdığınızdan ve sunucuyu yeniden başlattığınızdan emin olun. Terminal loglarını kontrol edin.';
+    console.error(`[sendPostByEmail] HATA: ${errorMessage}`);
     return { success: false, message: errorMessage };
   }
 
@@ -101,13 +105,13 @@ export async function sendPostByEmail(
     <p>Merhaba,</p>
     <p>Yapay zeka sizin için aşağıdaki gönderi içeriğini oluşturdu:</p>
     <hr>
-    <h2>Konu: ${post.topic}</h2>
+    <h2>Konu: ${post.topic || 'Belirtilmemiş'}</h2>
     <p><strong>Resim URL'si:</strong> <a href="${post.imageUrl}">${post.imageUrl}</a></p>
-    ${post.imageUrl.startsWith('data:image') ? `<p><img src="${post.imageUrl}" alt="Yapay Zeka Tarafından Üretilen Resim" style="max-width: 500px; height: auto;" /></p>` : ''}
+    ${post.imageUrl && post.imageUrl.startsWith('data:image') ? `<p><img src="${post.imageUrl}" alt="Yapay Zeka Tarafından Üretilen Resim" style="max-width: 500px; height: auto;" /></p>` : ''}
     <h3>Başlık:</h3>
-    <div style="background-color: #f0f0f0; padding: 10px; border-radius: 5px; white-space: pre-line;">${post.caption}</div>
+    <div style="background-color: #f0f0f0; padding: 10px; border-radius: 5px; white-space: pre-line;">${post.caption || 'Başlık oluşturulmadı.'}</div>
     <h3>Hashtag'ler:</h3>
-    <p>${post.hashtags.map(tag => `#${tag}`).join(' ')}</p>
+    <p>${post.hashtags && post.hashtags.length > 0 ? post.hashtags.map(tag => `#${tag}`).join(' ') : 'Hashtag bulunmuyor.'}</p>
     <hr>
     <p>Bu içeriği Instagram'da paylaşabilirsiniz.</p>
     <p>İyi çalışmalar!</p>
@@ -130,7 +134,7 @@ export async function sendPostByEmail(
     };
   } catch (error) {
     console.error(`[sendPostByEmail] E-POSTA GÖNDERME HATASI. Alıcı: ${recipientEmail}, Konu: "${emailSubject}"`, error);
-    let errorMessage = 'E-posta gönderilemedi. Lütfen sunucu loglarını kontrol edin.';
+    let errorMessage = 'E-posta gönderilemedi. Lütfen sunucu loglarını (terminal) ve Gmail hesap ayarlarınızı kontrol edin.';
     if (error instanceof Error) {
       errorMessage = `E-posta gönderilemedi: ${error.message}. Gmail ayarlarınızı ve uygulama şifrenizi kontrol edin.`;
        // @ts-ignore
@@ -147,4 +151,3 @@ import { suggestSingleContentIdea as suggestSingleContentIdeaFlow } from '@/ai/f
 import { generatePostCaption as generatePostCaptionFlow } from '@/ai/flows/generate-post-captions';
 import { optimizePostHashtags as optimizePostHashtagsFlow } from '@/ai/flows/optimize-post-hashtags';
 import { generatePostImage as generatePostImageFlow } from '@/ai/flows/generate-post-image';
-

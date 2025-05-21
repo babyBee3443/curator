@@ -85,22 +85,21 @@ export default function SettingsPage() {
                 <p className="font-semibold text-yellow-300">Gerçek E-posta Gönderimi İçin YAPILMASI ZORUNLU Adımlar:</p>
                 <ol className="list-decimal list-inside text-sm pl-4 space-y-2">
                   <li>
-                    <strong>Nodemailer Kurulumu:</strong> Bu özellik için `nodemailer` kütüphanesi projenize eklenmiştir. Eğer `node_modules` klasörünüzde bir sorun olduğunu düşünüyorsanız veya `package.json` dosyasında `nodemailer` görünmüyorsa, projenizin ana dizininde terminali açıp <code className="bg-black/50 px-1 py-0.5 rounded">npm install nodemailer</code> (veya <code className="bg-black/50 px-1 py-0.5 rounded">yarn add nodemailer</code>) komutunu tekrar çalıştırın.
+                    <strong>Nodemailer Kurulumu (Eğer yapmadıysanız):</strong> Bu özellik için `nodemailer` kütüphanesi projenize eklenmiştir. Eğer `node_modules` klasörünüzde bir sorun olduğunu düşünüyorsanız veya `package.json` dosyasında `nodemailer` görünmüyorsa, projenizin ana dizininde terminali açıp <code className="bg-black/50 px-1 py-0.5 rounded">npm install nodemailer</code> (veya <code className="bg-black/50 px-1 py-0.5 rounded">yarn add nodemailer</code>) komutunu tekrar çalıştırın.
                   </li>
                   <li>
                     <strong>`.env.local` Dosyası Oluşturun (veya Kontrol Edin):</strong>
-                    <ul className="list-disc list-inside pl-4 mt-1">
-                      <li>Projenizin **ana dizininde** (yani `package.json` dosyasının bulunduğu yerde) `.env.local` adında bir dosya oluşturun.</li>
+                    <ul className="list-disc list-inside pl-4 mt-1 text-xs">
+                      <li>Projenizin **ANA DİZİNİNDE** (yani `package.json` dosyasının bulunduğu yerde) `.env.local` adında bir dosya oluşturun.</li>
                       <li>Eğer dosya zaten varsa, içeriğini ve adını (başında nokta olduğundan emin olun) kontrol edin.</li>
                     </ul>
                   </li>
                   <li>
-                    <strong>Ortam Değişkenlerini Ekleyin:</strong> `.env.local` dosyasının içine aşağıdaki satırları **tam olarak bu şekilde** ekleyin ve kendi bilgilerinizle değiştirin:
+                    <strong>Ortam Değişkenlerini Ekleyin (TAM OLARAK BU ŞEKİLDE):</strong> `.env.local` dosyasının içine aşağıdaki satırları **tam olarak bu şekilde** ekleyin ve kendi bilgilerinizle değiştirin (başında veya sonunda fazladan boşluk olmamalı):
                     <pre className="mt-2 p-3 bg-black/50 rounded text-xs whitespace-pre-wrap text-blue-100"><code>EMAIL_SENDER_ADDRESS=getdusbox@gmail.com{'\n'}EMAIL_APP_PASSWORD=qdti jdwa wxpd tkwl</code></pre>
                     <ul className="list-disc list-inside pl-4 text-xs mt-1">
                         <li><code className="text-yellow-300">EMAIL_SENDER_ADDRESS</code>: E-postaların gönderileceği sizin Gmail adresiniz.</li>
                         <li><code className="text-yellow-300">EMAIL_APP_PASSWORD</code>: Yukarıdaki Gmail hesabınız için Google Hesap ayarlarınızdan oluşturduğunuz 16 haneli **Uygulama Şifresi**. Normal Gmail şifreniz burada çalışmayacaktır.</li>
-                        <li>Değişken adlarında veya değerlerde yazım hatası, başta/sonda fazladan boşluk olmadığından emin olun.</li>
                     </ul>
                   </li>
                    <li className="text-red-400 font-bold bg-red-900/50 p-2 rounded-md">
@@ -116,6 +115,18 @@ export default function SettingsPage() {
                    <li><strong>`.env.local` Dosyasını Gizli Tutun:</strong> Bu dosyayı **ASLA** Git gibi versiyon kontrol sistemlerine (GitHub, GitLab vb.) göndermeyin. Genellikle `.gitignore` dosyanızda `*.local` veya `/.env*.local` gibi bir satır bulunur; bu, bu tür dosyaların kazara yüklenmesini engeller.</li>
                 </ol>
                 <p className="mt-3">Bu ayarlar doğru yapıldığında, uygulama "İçeriği E-posta İle Gönder" butonuyla belirttiğiniz alıcıya e-posta göndermeyi deneyecektir. Hata olması durumunda bildirim alacaksınız ve detaylar için **tarayıcı konsolunu** ve özellikle **sunucu terminalindeki (Next.js'in çalıştığı yer) logları** kontrol edebilirsiniz.</p>
+                <p className="mt-2 font-semibold text-orange-300">
+                    Eğer hala "Gönderen bilgileri eksik" hatası alıyorsanız, lütfen Next.js'in çalıştığı terminaldeki şu logları kontrol edin ve bana iletin:
+                </p>
+                <ul className="list-disc list-inside pl-4 text-xs mt-1">
+                    <li><code>[ACTIONS.TS] MODÜL YÜKLENDİ - Ortam Değişkenleri Kontrolü:</code></li>
+                    <li><code>[ACTIONS.TS] &gt; process.env.EMAIL_SENDER_ADDRESS: "..."</code></li>
+                    <li><code>[ACTIONS.TS] &gt; process.env.EMAIL_APP_PASSWORD: "..."</code></li>
+                    <li><code>[sendPostByEmail] FONKSIYON ÇAĞRILDI. Alıcı: ...</code></li>
+                    <li><code>[sendPostByEmail] Ortam Değişkenleri Kontrolü (Fonksiyon İçi):</code></li>
+                    <li><code>[sendPostByEmail] &gt; senderEmail DEĞERİ: "..." (tip: ...)</code></li>
+                    <li><code>[sendPostByEmail] &gt; senderAppPassword DEĞERİ: "..." (tip: ...)</code></li>
+                </ul>
               </AlertDescription>
             </Alert>
 
@@ -149,4 +160,3 @@ export default function SettingsPage() {
     </div>
   );
 }
-
