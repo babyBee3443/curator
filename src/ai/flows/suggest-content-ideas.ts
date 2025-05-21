@@ -1,7 +1,8 @@
+
 'use server';
 
 /**
- * @fileOverview Bilim, teknoloji ve uzay alanlarında Instagram için tam teşekküllü tek bir gönderi fikri üretir.
+ * @fileOverview Belirtilen persona ve stillere uygun olarak Instagram için tam teşekküllü tek bir gönderi fikri üretir.
  *
  * - suggestSingleContentIdea - Tek bir yapılandırılmış içerik fikri öneren bir işlev.
  * - SuggestSingleContentIdeaOutput - suggestSingleContentIdea işlevi için dönüş türü.
@@ -17,12 +18,12 @@ const SuggestSingleContentIdeaOutputSchema = z.object({
   topic: z
     .string()
     .describe(
-      'Gönderinin kısa, öz konusu/başlığı. Diğer AI modelleri için de kullanılacak.'
+      'Gönderinin 3-5 kelimelik kısa ve öz konusu/başlığı. Diğer AI modelleri (başlık, hashtag, resim) için de kullanılacak. Önerilen konunun aşağıdaki 6 stilden hangisine uyduğunu açıkça belirtmelidir (Örn: "Gündelik Teknoloji: Makasın İcadı" veya "Donanım Gerçeği: CPU Saat Hızları").'
     ),
   keyInformation: z
     .string()
     .describe(
-      'Konu hakkında detaylı, ilgi çekici bilgi. Bu metin, hem resim üretme istemi hem de daha detaylı bir başlık oluşturma istemi olarak kullanılabilecek kadar zengin olmalıdır.'
+      'Bu konu hakkında, yaklaşık 100-150 kelimelik bilgilendirici, net, gerçeğe dayalı ve ilgi çekici bir gönderi metni oluşturmak için temel teşkil edecek ZENGİN ve DETAYLI bilgi. Bu metin, hem nihai gönderi başlığına temel oluşturacak hem de resim üretme istemi için yeterli detayı içermelidir. Tüm bilgilerin kamuya açık ve doğrulanabilir kaynaklardan geldiğinden emin ol.'
     ),
 });
 export type SuggestSingleContentIdeaOutput = z.infer<
@@ -37,18 +38,27 @@ const prompt = ai.definePrompt({
   name: 'suggestSingleContentIdeaPrompt',
   input: {schema: SuggestSingleContentIdeaInputSchema},
   output: {schema: SuggestSingleContentIdeaOutputSchema},
-  prompt: `Sen, bilim, teknoloji ve uzay odaklı bir Instagram hesabı için **tek bir** tam teşekküllü gönderi fikri üretmekle görevli bir yapay zeka asistanısın.
-  Lütfen sadece bilim, teknoloji veya uzay konularından birini seç.
-  Üreteceğin fikir şunları içermelidir:
-  1.  \`topic\`: Gönderinin 3-5 kelimelik kısa ve öz konusu/başlığı. Bu, hashtag optimizasyonu için de kullanılacak.
-  2.  \`keyInformation\`: Bu konu hakkında 2-3 cümlelik ilgi çekici, bilgilendirici ve Instagram formatına uygun bir metin. Bu metin, aynı zamanda bir resim üretme istemi ve daha detaylı bir başlık (caption) oluşturma istemi olarak da kullanılabilecek kadar spesifik ve zengin olmalıdır.
+  prompt: `Sen, genel teknoloji, bilim ve insan icatları hakkında şaşırtıcı, doğrulanmış ve ilgi çekici gönderiler oluşturma konusunda uzmanlaşmış, son derece zeki ve gerçeklere dayalı bir içerik üretici yapay zekasın. Görevin, bir Instagram hesabı için içerik oluşturmak.
 
-  Lütfen sadece bu iki alanı içeren bir JSON nesnesi döndür. Yanıtında başka hiçbir açıklama veya metin olmasın.
-  Örnek Çıktı Formatı:
-  {
-    "topic": "Mars Yüzeyindeki Su İzleri",
-    "keyInformation": "NASA'nın son keşifleri, Mars'ın geçmişte sıvı suya ev sahipliği yapmış olabileceğine dair güçlü kanıtlar sunuyor. Perseverance gezgini tarafından gönderilen yeni görüntüler, kurumuş nehir yataklarını ve mineral birikintilerini gösteriyor. Bu, kızıl gezegende yaşam olasılığını yeniden gündeme getiriyor."
-  }
+LÜTFEN AŞAĞIDAKİ TARZLARDAN BİRİNİ SEÇEREK **TEK BİR** GÖNDERİ FİKRİ ÜRET:
+
+1.  **Gündelik Teknoloji Hakkında Büyüleyici Gerçekler:** (Örn: Makas nasıl icat edildi, QWERTY klavyeler neden var?)
+2.  **Yaygın Cihazlarda Şaşırtıcı Kısayollar veya İpuçları:** (Bilgisayarlar, telefonlar vb. için)
+3.  **Donanım Hakkında Bilinmeyen Gerçekler:** (CPU'lar, GPU'lar, RAM, klavyeler vb.)
+4.  **Aletlerin ve Makinelerin Evrimi:** (Antik çağlardan modern zamanlara)
+5.  **Gelişmekte Olan Teknolojilerin Harika Kullanım Alanları:** (Yapay zeka, robotik vb. - POLİTİK VEYA DOĞRULANMAMIŞ İDDİALAR KESİNLİKLE YOKTUR. Sadece doğrulanmış ve tarafsız bilgiler.)
+6.  **Gündelik Aletler, Cihazlar Hakkında Eğlenceli ve Garip Gerçekler:**
+
+Üreteceğin fikir şunları içermelidir:
+1.  \`topic\`: Gönderinin 3-5 kelimelik kısa ve öz konusu/başlığı. Bu, diğer AI modelleri (başlık, hashtag, resim) için de kullanılacak. Önerilen konunun yukarıdaki 6 stilden hangisine uyduğunu belirtmelidir (Örn: "Gündelik Teknoloji: Makasın İcadı" veya "Donanım Gerçeği: CPU Saat Hızları").
+2.  \`keyInformation\`: Bu konu hakkında, yaklaşık 100-150 kelimelik bilgilendirici, net, gerçeğe dayalı ve ilgi çekici bir gönderi metni oluşturmak için temel teşkil edecek ZENGİN ve DETAYLI bilgi. Bu metin, hem nihai gönderi başlığına temel oluşturacak hem de resim üretme istemi için yeterli detayı içermelidir. Tüm bilgilerin kamuya açık ve doğrulanabilir kaynaklardan geldiğinden emin ol.
+
+Lütfen sadece bu iki alanı içeren bir JSON nesnesi döndür. Yanıtında başka hiçbir açıklama veya metin olmasın.
+Örnek Çıktı Formatı:
+{
+  "topic": "Gündelik Teknoloji: QWERTY Klavyenin Kökeni",
+  "keyInformation": "QWERTY klavye düzeni, yazma hızını yavaşlatmak için değil, aslında mekanik daktilolardaki harf kollarının birbirine takılmasını önlemek için tasarlanmıştır. Christopher Latham Sholes tarafından 1870'lerde geliştirilen bu düzen, sık kullanılan harf çiftlerini birbirinden uzaklaştırarak sıkışmaları azaltmayı hedefliyordu. Günümüzde dijital klavyelerde bu mekanik kısıtlama olmamasına rağmen, QWERTY alışkanlık ve yaygınlık nedeniyle standart olarak kalmıştır. Bu durum, 'path dependence' (yola bağımlılık) kavramının ilginç bir örneğidir."
+}
   `,
 });
 
