@@ -25,9 +25,12 @@ export async function generateFullPostAction(): Promise<FullPostGenerationOutput
       throw new Error('Yapay zeka geçerli bir içerik fikri üretemedi.');
     }
 
+    // Sadece konu başlığını resim istemi olarak kullan
+    const imagePrompt = idea.topic; 
+
     // 2. Resim ve Başlık Üretimini Paralelleştir
     const [imageResult, captionResult] = await Promise.all([
-      generatePostImageFlow({ prompt: idea.topic }), // SADECE KISA KONUYU GÖNDER
+      generatePostImageFlow({ prompt: imagePrompt }),
       generatePostCaptionFlow({ topic: idea.topic, keyInformation: idea.keyInformation })
     ]);
     console.log('Resim sonucu:', imageResult);
@@ -62,6 +65,7 @@ export async function generateFullPostAction(): Promise<FullPostGenerationOutput
   }
 }
 
+// Bu eylemler mevcut işlevsellik için korunuyor, ancak yeni UI doğrudan bunları kullanmıyor olabilir.
 export async function generateCaptionAction(input: GeneratePostCaptionInput): Promise<GeneratePostCaptionOutput> {
   try {
     return await generatePostCaptionFlow(input);
@@ -89,28 +93,58 @@ export async function generateImageAction(input: GeneratePostImageInput): Promis
   }
 }
 
-// Yeni Placeholder Eylem: Instagram'da Paylaşım Simülasyonu
 export async function sharePostToInstagramAction(post: Post): Promise<{ success: boolean; message: string }> {
   console.log(`Instagram'da paylaşılmak üzere alınan gönderi (ID: ${post.id}):`, {
     caption: post.caption,
-    imageUrl: post.imageUrl ? post.imageUrl.substring(0, 50) + '...' : 'No image URL', // Sadece başını logla
+    imageUrl: post.imageUrl ? post.imageUrl.substring(0, 100) + '...' : 'No image URL',
     hashtags: post.hashtags,
   });
 
-  // Burada gerçek Instagram API çağrısı yapılacaktır.
-  // Şimdilik sadece bir simülasyon yapıyoruz.
-  // TODO: Gerçek Instagram API entegrasyonunu buraya ekleyin.
-
-  // Simülasyon için rastgele bir gecikme ve sonuç
   await new Promise(resolve => setTimeout(resolve, 1500));
-
-  const isSuccess = Math.random() > 0.2; // %80 başarı şansı simülasyonu
+  const isSuccess = Math.random() > 0.1; // %90 başarı şansı simülasyonu
 
   if (isSuccess) {
     console.log(`Gönderi (ID: ${post.id}) Instagram'a başarıyla gönderildi (SİMÜLASYON).`);
-    return { success: true, message: `Gönderi (ID: ${post.id}) Instagram'a başarıyla gönderildi (SİMÜLASYON).` };
+    return { success: true, message: `Gönderi (ID: ${post.id}) başarıyla paylaşıldı (Simülasyon).` };
   } else {
     console.error(`Gönderi (ID: ${post.id}) Instagram'a gönderilemedi (SİMÜLASYON).`);
-    throw new Error(`Gönderi (ID: ${post.id}) Instagram'a gönderilemedi. Lütfen daha sonra tekrar deneyin (SİMÜLASYON).`);
+    throw new Error(`Gönderi (ID: ${post.id}) paylaşılamadı. Ağ hatası veya API sorunu olabilir (Simülasyon).`);
   }
+}
+
+// --- Instagram Bağlantısı için Yer Tutucu Eylemler ---
+
+export async function getInstagramConnectionStatusAction(): Promise<{ connected: boolean; username: string | null; error?: string }> {
+  console.warn('getInstagramConnectionStatusAction çağrıldı - BU BİR SİMÜLASYONDUR.');
+  // Gerçek bir uygulamada, burada güvenli bir şekilde saklanan OAuth token'ları vb. kontrol edilir.
+  // Şimdilik, örneğin bir veritabanı veya güvenli sunucu tarafı depolama olmadığını varsayalım.
+  // Bu fonksiyonun istemci tarafında simüle edilmesi daha uygun olabilir (localStorage ile)
+  // ya da backend'de gerçek bir durum yönetimi gerektirir.
+  // Örnek olarak her zaman "bağlı değil" döndürelim ki UI'da mantığı görebilelim.
+  return { connected: false, username: null };
+}
+
+export async function initiateInstagramOAuthAction(): Promise<{ redirectUrl?: string; error?: string }> {
+  console.warn('initiateInstagramOAuthAction çağrıldı - BU BİR SİMÜLASYONDUR.');
+  // Gerçek bir uygulamada, bu fonksiyon Instagram OAuth için bir yönlendirme URL'si oluşturur
+  // ve bunu istemciye döndürür. İstemci kullanıcıyı bu URL'ye yönlendirir.
+  // Örn: return { redirectUrl: 'https://api.instagram.com/oauth/authorize?client_id=...' };
+  return { error: 'Instagram OAuth akışı başlatma özelliği henüz tam olarak uygulanmadı.' };
+}
+
+export async function completeInstagramOAuthAction(code: string): Promise<{ success: boolean; username?: string; error?: string }> {
+  console.warn('completeInstagramOAuthAction çağrıldı - BU BİR SİMÜLASYONDUR.');
+  // Instagram'dan geri dönen `code` ile access token alınır ve güvenli bir şekilde saklanır.
+  // Kullanıcı adı gibi bilgiler de alınabilir.
+  if (code) {
+    // Simülasyon: Başarılı
+    return { success: true, username: 'simulated_user' };
+  }
+  return { success: false, error: 'Geçersiz yetkilendirme kodu (Simülasyon).' };
+}
+
+export async function disconnectInstagramAction(): Promise<{ success: boolean; error?: string }> {
+  console.warn('disconnectInstagramAction çağrıldı - BU BİR SİMÜLASYONDUR.');
+  // Saklanan token'lar silinir/geçersiz kılınır.
+  return { success: true };
 }
