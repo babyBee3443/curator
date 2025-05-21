@@ -31,8 +31,8 @@ export default function SettingsPage() {
   const handleConnectInstagram = async () => {
     setIsLoading(true);
     toast({
-      title: 'Instagram Bağlantısı Kuruluyor...',
-      description: 'Bu işlem normalde sizi Instagram\'a yönlendirir. Bu bir simülasyondur.',
+      title: 'Instagram Bağlantısı Kuruluyor... (Simülasyon)',
+      description: 'Bu adımda normalde Instagram\'ın kimlik doğrulama sayfasına yönlendirilirsiniz.',
     });
 
     // Simülasyon: 1.5 saniye sonra başarılı bağlantı
@@ -96,11 +96,11 @@ export default function SettingsPage() {
           {!isLoading && isConnected && username && (
             <div className="space-y-4">
               <p className="text-green-600 font-semibold">
-                Instagram hesabına bağlı: <span className="font-bold">@{username}</span>
+                Instagram hesabına bağlı: <span className="font-bold">@{username}</span> (Simülasyon)
               </p>
               <Button variant="outline" onClick={handleDisconnectInstagram} disabled={isLoading}>
                 {isLoading && username ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                Bağlantıyı Kes
+                Bağlantıyı Kes (Simülasyon)
               </Button>
             </div>
           )}
@@ -115,13 +115,26 @@ export default function SettingsPage() {
                 className="bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 text-white hover:opacity-90"
               >
                 {isLoading && !username ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Instagram className="mr-2 h-5 w-5" />}
-                Instagram'a Bağlan
+                Instagram'a Bağlan (Simülasyon)
               </Button>
             </div>
           )}
-          <p className="mt-6 text-xs text-muted-foreground">
-            <strong>Not:</strong> Bu özellik şu anda yalnızca bir kullanıcı arayüzü simülasyonudur. Gerçek Instagram bağlantısı ve otomatik paylaşım için kapsamlı ek geliştirme gerekmektedir (OAuth 2.0, API entegrasyonu vb.).
-          </p>
+          <div className="mt-6 p-4 border rounded-md bg-muted/50">
+            <h4 className="font-semibold text-sm text-foreground mb-2">Gerçek Instagram Entegrasyonu Hakkında Not:</h4>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Bu sayfada gördüğünüz Instagram bağlantı işlevi şu anda bir **simülasyondur**. Gerçek bir Instagram entegrasyonu aşağıdaki gibi adımları içerir ve kapsamlı backend geliştirmesi gerektirir:
+            </p>
+            <ul className="list-disc list-inside text-xs text-muted-foreground mt-2 space-y-1">
+              <li>Meta (Facebook) Geliştirici Portalı'nda bir uygulama oluşturulması ve API anahtarlarının (Client ID, Client Secret) alınması.</li>
+              <li>Güvenli OAuth 2.0 kimlik doğrulama akışının sunucu tarafında (backend) uygulanması. Bu, kullanıcıyı Instagram'a yönlendirmeyi, geri dönen yetkilendirme kodunu almayı ve bu kodu bir erişim token'ı ile değiştirmeyi içerir.</li>
+              <li>Erişim token'larının (access tokens) ve yenileme token'larının (refresh tokens) güvenli bir şekilde sunucu tarafında saklanması ve yönetilmesi.</li>
+              <li>Bu token'ları kullanarak Instagram API'lerine (içerik yayınlama, profil bilgisi alma vb.) isteklerin yapılması.</li>
+              <li>API kullanım limitlerinin ve hata yönetiminin ele alınması.</li>
+            </ul>
+            <p className="text-xs text-muted-foreground mt-3">
+              Bu adımlar, güvenlik ve stabilite açısından kritik öneme sahiptir ve genellikle özel backend geliştirme uzmanlığı gerektirir. Mevcut arayüz, bu karmaşık sürecin bir başlangıç noktası olarak tasarlanmıştır.
+            </p>
+          </div>
         </CardContent>
       </Card>
     </div>
