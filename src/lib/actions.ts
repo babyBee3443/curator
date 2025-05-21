@@ -5,6 +5,7 @@ import { generatePostCaption as generatePostCaptionFlow, type GeneratePostCaptio
 import { optimizePostHashtags as optimizePostHashtagsFlow, type OptimizePostHashtagsInput, type OptimizePostHashtagsOutput } from '@/ai/flows/optimize-post-hashtags';
 import { generatePostImage as generatePostImageFlow, type GeneratePostImageInput, type GeneratePostImageOutput } from '@/ai/flows/generate-post-image';
 import type { Post } from '@/types';
+import nodemailer from 'nodemailer';
 
 export interface FullPostGenerationOutput {
   topic: string;
@@ -24,7 +25,6 @@ export async function generateFullPostAction(): Promise<FullPostGenerationOutput
       throw new Error('Yapay zeka geçerli bir içerik fikri üretemedi.');
     }
 
-    // Resim oluşturma istemi için sadece kısa başlığı kullanalım.
     const imagePrompt = idea.topic; 
 
     const [imageResult, captionResult] = await Promise.all([
@@ -63,27 +63,26 @@ export async function generateFullPostAction(): Promise<FullPostGenerationOutput
 }
 
 export async function sharePostToInstagramAction(post: Post, accessToken?: string): Promise<{ success: boolean; message: string; instagramPostId?: string }> {
-  console.log(`[TEST] Instagram'da paylaşılmak üzere alınan gönderi (ID: ${post.id})`);
+  console.log(`[GERÇEK API DENEMESİ] Instagram'da paylaşılmak üzere alınan gönderi (ID: ${post.id})`);
 
   if (!accessToken) {
-    console.error(`[TEST] Gönderi (ID: ${post.id}) paylaşılamadı: Erişim Belirteci (Access Token) eksik.`);
+    console.error(`[GERÇEK API DENEMESİ] Gönderi (ID: ${post.id}) paylaşılamadı: Erişim Belirteci (Access Token) eksik.`);
      return { success: false, message: 'Erişim Belirteci (Access Token) eksik. Lütfen Ayarlar sayfasından belirtecinizi girin.'};
   }
 
   if (post.imageUrl.startsWith('data:image')) {
-    console.warn(`[TEST] Gönderi (ID: ${post.id}): Resim URL'si bir veri URI'si. Instagram Graph API doğrudan veri URI'lerini kabul etmez. API çağrısı muhtemelen başarısız olacaktır. Resmin herkese açık bir URL olması gerekir.`);
+    console.warn(`[GERÇEK API DENEMESİ] Gönderi (ID: ${post.id}): Resim URL'si bir veri URI'si. Instagram Graph API doğrudan veri URI'lerini kabul etmez. API çağrısı muhtemelen başarısız olacaktır. Resmin herkese açık bir URL olması gerekir.`);
+     return { success: false, message: "Resim URL'si bir veri URI'si. Instagram Graph API, doğrudan veri URI'lerini kabul etmez. Gönderi paylaşımı denemesi için resmin herkese açık bir URL olması gerekir. Lütfen Ayarlar sayfasındaki uyarıları okuyun."};
   }
 
   const fullCaption = `${post.caption}\n\n${post.hashtags.map(h => `#${h.trim()}`).join(' ')}`;
-  const instagramApiVersion = 'v19.0'; // veya güncel bir sürüm
+  const instagramApiVersion = 'v19.0'; 
 
   try {
-    console.log(`[GERÇEK API DENEMESİ - GÜVENSİZ YÖNTEM] Instagram API çağrısı deneniyor. Belirtecin ilk 10 karakteri: ${accessToken.substring(0,10)}...`);
+    console.log(`[GERÇEK API DENEMESİ] Instagram API çağrısı deneniyor. Belirtecin ilk 10 karakteri: ${accessToken.substring(0,10)}...`);
     console.log(`[GERÇEK API DENEMESİ] Kullanılacak resim URL'si: ${post.imageUrl}`);
     console.log(`[GERÇEK API DENEMESİ] Kullanılacak başlık: ${fullCaption.substring(0, 100)}...`);
 
-    // Adım 1: Medya Konteyneri Oluşturma
-    // Carousel gönderileri için 'children' parametresi kullanılır. Tek medya için doğrudan image_url veya video_url.
     const mediaContainerParams = new URLSearchParams({
       image_url: post.imageUrl,
       caption: fullCaption,
@@ -115,17 +114,13 @@ export async function sharePostToInstagramAction(post: Post, accessToken?: strin
     }
     console.log('[GERÇEK API DENEMESİ] Instagram medya konteyneri oluşturuldu, creation_id:', creationId);
 
-    // Adım 2: Medya Konteynerini Yayınlama
-    // creation_id alındıktan sonra bu ID ile yayınlama yapılır.
     const publishParams = new URLSearchParams({
       creation_id: creationId,
       access_token: accessToken,
     });
 
     console.log('[GERÇEK API DENEMESİ] Instagram Medya Yayınlama API çağrısı yapılıyor (POST /me/media_publish)...');
-    // Belirli bir süre bekleme (isteğe bağlı, konteynerin işlenmesi için)
-    // await new Promise(resolve => setTimeout(resolve, 5000)); // Örnek 5 saniye bekleme
-
+    
     const publishResponse = await fetch(`https://graph.facebook.com/${instagramApiVersion}/me/media_publish`, {
       method: 'POST',
       body: publishParams,
@@ -163,43 +158,73 @@ export async function sharePostToInstagramAction(post: Post, accessToken?: strin
 }
 
 export async function sendContentByEmailAction(post: Post, recipientEmail: string): Promise<{ success: boolean; message: string }> {
-  console.log(`[E-POSTA SİMÜLASYONU] Alınan gönderi (ID: ${post.id}), Alıcı: ${recipientEmail}`);
-  const fromEmailSimulated = 'getdusbox@gmail.com'; // Kullanıcının belirttiği gönderen e-posta adresi (SİMÜLASYON İÇİN)
+  const senderEmail = process.env.EMAIL_SENDER_ADDRESS;
+  const appPassword = process.env.EMAIL_APP_PASSWORD;
 
-  // E-posta içeriğini hazırlayalım (HTML veya metin olarak)
-  const emailSubject = `Kozmos Küratörü Yeni Gönderi Önerisi: ${post.topic}`;
-  let emailBody = `Merhaba,\n\nYapay zeka sizin için yeni bir Instagram gönderi içeriği hazırladı:\n\n`;
-  emailBody += `Konu: ${post.topic}\n\n`;
-  emailBody += `Başlık Önerisi:\n${post.caption}\n\n`;
-  emailBody += `Hashtag Önerileri:\n${post.hashtags.map(h => `#${h}`).join(' ')}\n\n`;
-  emailBody += `Resim URL'si (veya Veri URI'si):\n${post.imageUrl}\n\n`;
-  emailBody += `Bu içerik, ${fromEmailSimulated} (simüle edilmiş gönderen) adresinden ${recipientEmail} adresine gönderilmek üzere hazırlandı.\n\n`;
-  emailBody += `Saygılarımızla,\nKozmos Küratörü (Yapay Zeka Asistanı)\n\n`;
-  emailBody += `--- SİMÜLASYON NOTU ---\n`;
-  emailBody += `Bu bir e-posta gönderim simülasyonudur. Gerçek e-posta gönderimi yapılmamıştır.\n`;
-  emailBody += `Gerçek gönderim için sunucu tarafında Nodemailer gibi bir kütüphane ve ${fromEmailSimulated} hesabına ait bir Google Uygulama Şifresi (sizin sağladığınız gibi) kullanılarak bir altyapı kurulması gerekir. Bu şifre güvenli bir şekilde (örneğin ortam değişkenleri ile) sunucu tarafı kodunuzda yönetilmelidir.\n`;
-
-  console.log("--- E-POSTA SİMÜLASYON BAŞLANGICI ---");
-  console.log("Gönderen (Simüle):", fromEmailSimulated);
-  console.log("Alıcı:", recipientEmail);
-  console.log("Konu:", emailSubject);
-  console.log("İçerik:\n", emailBody);
-  console.log("--- E-POSTA SİMÜLASYON SONU ---");
-
-  // Bu kısım gerçek Nodemailer kodunu içermeyecek, sadece simülasyon.
-  try {
-    // Burada normalde Nodemailer ile e-posta gönderme kodu olurdu.
-    // await transporter.sendMail({ from: fromEmailSimulated, to: recipientEmail, subject: emailSubject, text: emailBody });
-    // Simülasyon başarılı kabul ediliyor.
-    return {
-      success: true,
-      message: `E-posta gönderme simülasyonu başarılı. Gönderi detayları ve e-posta içeriği konsola loglandı. (Alıcı: ${recipientEmail}, Simüle Edilmiş Gönderen: ${fromEmailSimulated})`,
-    };
-  } catch (error) {
-    console.error('[E-POSTA SİMÜLASYONU] Hata:', error);
+  if (!senderEmail || !appPassword) {
+    console.error('[E-POSTA GÖNDERME HATASI] Gönderen e-posta adresi veya uygulama şifresi ortam değişkenlerinde tanımlanmamış. Lütfen .env.local dosyasını kontrol edin.');
     return {
       success: false,
-      message: `E-posta gönderme simülasyonu sırasında bir hata oluştu: ${(error as Error).message}`,
+      message: 'E-posta gönderimi yapılandırma hatası: Gönderen bilgileri eksik. Lütfen .env.local dosyasını doğru yapılandırdığınızdan emin olun.',
+    };
+  }
+
+  console.log(`[E-POSTA GÖNDERME DENEMESİ] Alınan gönderi (ID: ${post.id}), Alıcı: ${recipientEmail}, Gönderen: ${senderEmail}`);
+
+  const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: senderEmail,
+      pass: appPassword,
+    },
+  });
+
+  const emailSubject = `Kozmos Küratörü Yeni Gönderi İçeriği: ${post.topic}`;
+  let emailBody = `Merhaba,\n\nYapay zeka sizin için yeni bir Instagram gönderi içeriği hazırladı:\n\n`;
+  emailBody += `Konu: ${post.topic}\n\n`;
+  emailBody += `Başlık Önerisi:\n${post.caption}\n\n`; // Yapay zeka notu zaten başlığın içinde
+  emailBody += `Hashtag Önerileri:\n${post.hashtags.map(h => `#${h}`).join(' ')}\n\n`;
+  emailBody += `Resim URL'si (veya Veri URI'si):\n${post.imageUrl}\n\n`;
+  emailBody += `Saygılarımızla,\nKozmos Küratörü (Yapay Zeka Asistanı)`;
+
+  const mailOptions = {
+    from: senderEmail,
+    to: recipientEmail,
+    subject: emailSubject,
+    text: emailBody,
+  };
+
+  try {
+    console.log("--- E-POSTA GÖNDERME DENEMESİ BAŞLANGICI ---");
+    console.log("Gönderen:", senderEmail);
+    console.log("Alıcı:", recipientEmail);
+    console.log("Konu:", emailSubject);
+    // console.log("İçerik:\n", emailBody); // Şifre hassasiyeti nedeniyle tüm body'yi loglamayalım.
+
+    const info = await transporter.sendMail(mailOptions);
+    console.log('E-posta gönderildi: %s', info.messageId);
+    console.log("--- E-POSTA GÖNDERME DENEMESİ SONU ---");
+    return {
+      success: true,
+      message: `E-posta başarıyla ${recipientEmail} adresine gönderildi. (Gönderen: ${senderEmail})`,
+    };
+  } catch (error) {
+    console.error('[E-POSTA GÖNDERME DENEMESİ] Hata:', error);
+     let errorMessage = 'E-posta gönderme denemesi sırasında bir hata oluştu.';
+    if (error instanceof Error) {
+        errorMessage += ` Detay: ${error.message}`;
+    }
+    if (typeof error === 'object' && error !== null && 'code' in error) {
+        const nodemailerError = error as { code?: string; responseCode?: number; command?: string };
+        if (nodemailerError.code === 'EAUTH' || nodemailerError.responseCode === 535) {
+            errorMessage += ' Kimlik doğrulama hatası. Lütfen e-posta adresi ve uygulama şifresini kontrol edin. Google hesap ayarlarınızda "Daha az güvenli uygulama erişimi"nin açık olduğundan veya geçerli bir Uygulama Şifresi kullandığınızdan emin olun.';
+        } else if (nodemailerError.code === 'ECONNECTION' || nodemailerError.responseCode === 500) {
+            errorMessage += ' Bağlantı hatası. İnternet bağlantınızı veya e-posta sunucusu ayarlarını kontrol edin.';
+        }
+    }
+    return {
+      success: false,
+      message: errorMessage,
     };
   }
 }

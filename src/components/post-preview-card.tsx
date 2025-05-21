@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { CalendarDays, Hash, Image as ImageIcon, Loader2, Sparkles, Share2, AlertTriangle, Mail } from 'lucide-react';
 import type { Post } from '@/types';
 import { useToast } from '@/hooks/use-toast';
-import { sharePostToInstagramAction, sendContentByEmailAction } from '@/lib/actions'; // sendContentByEmailAction eklendi
+import { sharePostToInstagramAction, sendContentByEmailAction } from '@/lib/actions'; 
 
 interface PostPreviewCardProps {
   post: Partial<Post>;
@@ -26,7 +26,7 @@ export function PostPreviewCard({ post, title = "Gönderi Önizlemesi", isLoadin
   const { id, imageUrl, imageHint, caption, hashtags, simulatedPostTime } = post;
   const [clientFormattedTime, setClientFormattedTime] = useState<string | null>(null);
   const [isSharing, setIsSharing] = useState(false);
-  const [isSendingEmail, setIsSendingEmail] = useState(false); // E-posta gönderme durumu için state
+  const [isSendingEmail, setIsSendingEmail] = useState(false); 
   const { toast } = useToast();
 
   useEffect(() => {
@@ -133,21 +133,23 @@ export function PostPreviewCard({ post, title = "Gönderi Önizlemesi", isLoadin
       const result = await sendContentByEmailAction(post as Post, recipientEmail);
       if (result.success) {
         toast({
-          title: 'E-posta Gönderme Simülasyonu Başarılı',
+          title: 'E-posta Gönderildi',
           description: result.message,
         });
       } else {
         toast({
-          title: 'E-posta Gönderme Simülasyonu Başarısız',
+          title: 'E-posta Gönderme Başarısız',
           description: result.message,
           variant: 'destructive',
+          duration: 10000, 
         });
       }
     } catch (error) {
       toast({
-        title: 'E-posta Simülasyon Hatası',
+        title: 'E-posta Gönderme Hatası',
         description: (error as Error).message,
         variant: 'destructive',
+        duration: 10000,
       });
     }
     setIsSendingEmail(false);
@@ -236,7 +238,7 @@ export function PostPreviewCard({ post, title = "Gönderi Önizlemesi", isLoadin
               size="sm"
             >
               {isSendingEmail ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Mail className="mr-2 h-4 w-4" />}
-              {isSendingEmail ? 'Gönderiliyor...' : "İçeriği E-posta İle Gönder (Simülasyon)"}
+              {isSendingEmail ? 'Gönderiliyor...' : "İçeriği E-posta İle Gönder"}
             </Button>
           </div>
         )}

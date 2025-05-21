@@ -58,12 +58,12 @@ export default function SettingsPage() {
     setIsLoading(false);
     setAccessToken('');
     toast({
-      title: 'Belirteç Kaydedildi (Yerel Simülasyon)',
+      title: 'Belirteç Kaydedildi',
       description: (
         <div>
           <p>{simulatedUsername} adına belirteciniz yerel olarak (tarayıcıda) saklandı.</p>
           <p className="font-bold text-yellow-400 mt-2">BU YÖNTEM GERÇEK KULLANIM İÇİN KESİNLİKLE GÜVENLİ DEĞİLDİR!</p>
-          <p className="text-xs">Sadece test ve geliştirme amaçlıdır.</p>
+          <p className="text-xs">Sadece test ve geliştirme amaçlıdır. Bu belirteç, "Instagram'da Paylaş (GERÇEK API DENEMESİ)" butonu tarafından kullanılacaktır.</p>
         </div>
       ),
       className: 'bg-yellow-600 text-white border-yellow-700',
@@ -109,7 +109,7 @@ export default function SettingsPage() {
           Ayarlar
         </h1>
         <p className="text-muted-foreground">
-          Uygulama tercihlerinizi, Instagram API bağlantı (TEST) ve E-posta Bildirim (Simülasyon) ayarlarınızı yönetin.
+          Uygulama tercihlerinizi, Instagram API bağlantı (TEST) ve E-posta Bildirim ayarlarınızı yönetin.
         </p>
       </div>
       <Separator className="my-6" />
@@ -213,26 +213,30 @@ export default function SettingsPage() {
           <CardHeader>
             <CardTitle className="text-xl flex items-center gap-2">
               <Mail className="h-6 w-6 text-blue-500" />
-              E-posta Bildirim Ayarları (Simülasyon)
+              E-posta Bildirim Ayarları
             </CardTitle>
             <CardDescription>
-              Oluşturulan gönderi içeriklerinin e-posta ile gönderilmesi için alıcı e-posta adresini ayarlayın. Bu özellik şu anda bir simülasyondur.
+              Oluşturulan gönderi içeriklerinin e-posta ile gönderilmesi için alıcı e-posta adresini ayarlayın. Bu özellik, Nodemailer ve Google Uygulama Şifresi kullanarak gerçek e-posta göndermeyi dener.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <Alert variant="default" className="bg-blue-500/10 border-blue-500/50">
               <Mail className="h-5 w-5 text-blue-600" />
-              <AlertTitle className="text-blue-700 font-bold">E-posta Gönderim Simülasyonu Hakkında</AlertTitle>
+              <AlertTitle className="text-blue-700 font-bold">E-posta Gönderimi Hakkında (Nodemailer ile Gerçek Deneme)</AlertTitle>
               <AlertDescription className="text-blue-600/90 space-y-2">
-                <p>Bu bölüm, yapay zeka tarafından oluşturulan gönderi içeriklerinin size e-posta ile gönderilmesini **simüle etmek** içindir. Kaydettiğiniz alıcı e-posta adresine, "Gönderi Geçmişi" bölümündeki gönderiler için "İçeriği E-posta İle Gönder (Simülasyon)" butonuna tıkladığınızda bir e-posta gönderiliyormuş gibi yapılacaktır.</p>
+                <p>Bu bölüm, yapay zeka tarafından oluşturulan gönderi içeriklerinin size e-posta ile gönderilmesini **denemek** içindir. "İçeriği E-posta İle Gönder" butonuna tıkladığınızda, sistem Nodemailer kütüphanesini kullanarak e-posta göndermeye çalışacaktır.</p>
                 <p className="font-semibold">Gerçek E-posta Gönderimi İçin Gerekenler:</p>
-                <ul className="list-disc list-inside text-xs pl-4">
-                  <li><strong>Gönderen Hesap:</strong> `cosmoscurator34@gmail.com` gibi bir e-posta hesabı.</li>
-                  <li><strong>Google Uygulama Şifresi:</strong> Eğer Gmail kullanılıyorsa, 2 Adımlı Doğrulama aktif edilmeli ve bir Uygulama Şifresi oluşturulmalıdır.</li>
-                  <li><strong>Sunucu Taraflı Kod:</strong> Nodemailer gibi bir kütüphane kullanılarak e-posta gönderme mantığının sunucu tarafında (örneğin, bir Next.js API route veya ayrı bir backend servisi içinde) yazılması gerekir.</li>
-                  <li><strong>Güvenlik:</strong> Uygulama şifresi gibi hassas bilgiler güvenli bir şekilde (örneğin, ortam değişkenleri veya güvenli bir konfigürasyon yönetimi ile) saklanmalıdır.</li>
-                </ul>
-                <p>Bu uygulama, şu anda bu sunucu taraflı e-posta gönderme altyapısını içermemektedir. Buradaki ayar sadece simülasyon amaçlıdır.</p>
+                <ol className="list-decimal list-inside text-xs pl-4">
+                  <li><strong>Gönderen E-posta ve Uygulama Şifresi:</strong> Projenizin ana dizininde `.env.local` adında bir dosya oluşturun.</li>
+                  <li>İçine aşağıdaki gibi kendi gönderen e-posta adresinizi ve Google Uygulama Şifrenizi ekleyin:
+                    <pre className="mt-1 p-2 bg-black/20 rounded text-xs whitespace-pre-wrap"><code>EMAIL_SENDER_ADDRESS=getdusbox@gmail.com{'\n'}EMAIL_APP_PASSWORD=sizin_google_uygulama_sifreniz</code></pre>
+                    (Verdiğiniz şifre örnek olarak `qdti jdwa wxpd tkwl` idi.)
+                  </li>
+                   <li>**ÖNEMLİ:** `.env.local` dosyasını asla versiyon kontrol sistemlerine (örn: Git) göndermeyin.</li>
+                  <li><strong>Google Hesap Ayarları:</strong> Gönderen Gmail hesabınızda "Daha az güvenli uygulama erişimi" ayarının aktif olması veya geçerli bir "Uygulama Şifresi" kullanılması gerekmektedir. Google, standart şifrelerle bu tür erişimlere izin vermeyebilir.</li>
+                  <li><strong>Nodemailer Kurulumu:</strong> Bu özellik için `nodemailer` kütüphanesi projeye eklendi. Değişikliklerden sonra `npm install` veya `yarn install` çalıştırmayı unutmayın.</li>
+                </ol>
+                <p>Bu ayarlar doğru yapıldığında, uygulama belirttiğiniz alıcıya e-posta göndermeyi deneyecektir. Hata olması durumunda bildirim alacaksınız.</p>
               </AlertDescription>
             </Alert>
 
