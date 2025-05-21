@@ -1,0 +1,65 @@
+import Image from 'next/image';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { CalendarDays, Hash, Image as ImageIcon } from 'lucide-react';
+import type { Post } from '@/types';
+
+interface PostPreviewCardProps {
+  post: Partial<Post>;
+  title?: string;
+}
+
+export function PostPreviewCard({ post, title = "Post Preview" }: PostPreviewCardProps) {
+  const { imageUrl, imageHint, caption, hashtags, simulatedPostTime } = post;
+
+  return (
+    <Card className="w-full max-w-md shadow-xl">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-xl">
+          <ImageIcon className="h-6 w-6 text-accent" />
+          {title}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {imageUrl && (
+          <div className="aspect-square w-full overflow-hidden rounded-md border bg-muted">
+            <Image
+              src={imageUrl}
+              alt={caption || 'Instagram post image'}
+              width={1080}
+              height={1080}
+              className="object-cover w-full h-full"
+              data-ai-hint={imageHint || "technology space"}
+            />
+          </div>
+        )}
+        {caption && (
+          <div>
+            <h4 className="font-semibold mb-1 text-foreground">Caption:</h4>
+            <p className="text-sm text-muted-foreground whitespace-pre-line leading-relaxed">{caption}</p>
+          </div>
+        )}
+        {hashtags && hashtags.length > 0 && (
+          <div>
+            <h4 className="font-semibold mb-2 text-foreground flex items-center gap-1">
+              <Hash className="h-4 w-4" /> Hashtags:
+            </h4>
+            <div className="flex flex-wrap gap-2">
+              {hashtags.map((tag, index) => (
+                <Badge key={index} variant="secondary" className="text-xs bg-primary/20 border-primary/30 text-primary-foreground">
+                  #{tag}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
+      </CardContent>
+      {simulatedPostTime && (
+        <CardFooter className="text-xs text-muted-foreground flex items-center gap-1">
+          <CalendarDays className="h-4 w-4" />
+          Scheduled for: {new Date(simulatedPostTime).toLocaleString()}
+        </CardFooter>
+      )}
+    </Card>
+  );
+}

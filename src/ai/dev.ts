@@ -1,1 +1,6 @@
-// Flows will be imported for their side effects in this file.
+import { config } from 'dotenv';
+config();
+
+import '@/ai/flows/suggest-content-ideas.ts';
+import '@/ai/flows/optimize-post-hashtags.ts';
+import '@/ai/flows/generate-post-captions.ts';
