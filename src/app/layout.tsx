@@ -2,6 +2,7 @@ import type {Metadata} from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
+import { AppHeader } from '@/components/layout/header'; // Import AppHeader
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -26,8 +27,20 @@ export default function RootLayout({
   return (
     <html lang="tr" className="dark">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}>
-        {children}
-        <Toaster />
+        <div className="flex min-h-screen w-full flex-col">
+          <AppHeader />
+          <div className="flex-1"> {/* This div will allow children to define their own main structure and padding */}
+            {children}
+          </div>
+          <footer className="py-6 md:px-8 md:py-0 border-t">
+            <div className="container flex flex-col items-center justify-center gap-4 md:h-20 md:flex-row mx-auto">
+              <p className="text-balance text-center text-sm leading-loose text-muted-foreground md:text-left">
+                Kozmos Küratörü için Yapay Zeka tarafından oluşturuldu.
+              </p>
+            </div>
+          </footer>
+          <Toaster />
+        </div>
       </body>
     </html>
   );

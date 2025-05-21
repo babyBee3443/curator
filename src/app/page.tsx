@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import type { Post } from '@/types';
-import { AppHeader } from '@/components/layout/header';
+// AppHeader import removed
 import { PostCreator } from '@/components/post-creator';
 import { PostHistory } from '@/components/post-history';
 import { Separator } from '@/components/ui/separator';
@@ -24,7 +24,7 @@ export default function HomePage() {
         }));
         setApprovedPosts(parsedPosts);
       } catch (error) {
-        console.error("Gönderiler yerel depolamadan ayrıştırılamadı:", error);
+        console.error("Gönderiler yerel depolamadan ayrıştırılamadı:", error); // Typo fixed
         setApprovedPosts([]);
       }
     }
@@ -37,28 +37,18 @@ export default function HomePage() {
   };
 
   return (
-    <div className="flex min-h-screen w-full flex-col">
-      <AppHeader />
-      <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8 container mx-auto">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">
-            İçerik Paneli
-          </h1>
-          <p className="text-muted-foreground">
-            Yapay zeka destekli Instagram içerik oluşturma sürecinizi yönetin.
-          </p>
-        </div>
-        <Separator className="my-4" />
-        <PostCreator onPostApproved={handlePostApproved} />
-        <PostHistory posts={approvedPosts} />
-      </main>
-      <footer className="py-6 md:px-8 md:py-0 border-t mt-auto">
-        <div className="container flex flex-col items-center justify-between gap-4 md:h-20 md:flex-row">
-          <p className="text-balance text-center text-sm leading-loose text-muted-foreground md:text-left">
-            Kozmos Küratörü için Yapay Zeka tarafından oluşturuldu.
-          </p>
-        </div>
-      </footer>
-    </div>
+    <main className="flex flex-col gap-4 p-4 md:gap-8 md:p-8 container mx-auto">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight text-foreground">
+          İçerik Paneli
+        </h1>
+        <p className="text-muted-foreground">
+          Yapay zeka destekli Instagram içerik oluşturma sürecinizi yönetin.
+        </p>
+      </div>
+      <Separator className="my-4" />
+      <PostCreator onPostApproved={handlePostApproved} />
+      <PostHistory posts={approvedPosts} />
+    </main>
   );
 }
