@@ -5,29 +5,26 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { CalendarDays, Hash, Image as ImageIcon, Loader2, Sparkles, Share2, AlertTriangle, Mail } from 'lucide-react';
+// Button importu kaldırıldı, artık kullanılmayacak
+import { CalendarDays, Hash, Image as ImageIcon, Loader2, Sparkles } from 'lucide-react'; // Share2, AlertTriangle, Mail ikonları kaldırıldı
 import type { Post } from '@/types';
-import { useToast } from '@/hooks/use-toast';
-import { sharePostToInstagramAction, sendContentByEmailAction } from '@/lib/actions'; 
+// useToast importu kaldırıldı, artık kullanılmayacak
+// sharePostToInstagramAction ve sendContentByEmailAction importları kaldırıldı
 
 interface PostPreviewCardProps {
   post: Partial<Post>;
   title?: string;
   isLoadingImage?: boolean;
-  showShareButton?: boolean;
+  showShareButton?: boolean; // Bu prop artık bir işlev görmeyecek ama uyumluluk için kalabilir
 }
 
-const INSTAGRAM_TOKEN_KEY = 'instagramAccessToken_sim';
-const EMAIL_RECIPIENT_KEY = 'emailRecipient_sim';
-
+// INSTAGRAM_TOKEN_KEY ve EMAIL_RECIPIENT_KEY sabitleri kaldırıldı
 
 export function PostPreviewCard({ post, title = "Gönderi Önizlemesi", isLoadingImage = false, showShareButton = false }: PostPreviewCardProps) {
   const { id, imageUrl, imageHint, caption, hashtags, simulatedPostTime } = post;
   const [clientFormattedTime, setClientFormattedTime] = useState<string | null>(null);
-  const [isSharing, setIsSharing] = useState(false);
-  const [isSendingEmail, setIsSendingEmail] = useState(false); 
-  const { toast } = useToast();
+  // isSharing ve isSendingEmail state'leri kaldırıldı
+  // const { toast } = useToast(); // toast kaldırıldı
 
   useEffect(() => {
     if (simulatedPostTime instanceof Date && !isNaN(simulatedPostTime.getTime())) {
@@ -55,106 +52,8 @@ export function PostPreviewCard({ post, title = "Gönderi Önizlemesi", isLoadin
 
   const displayImageUrl = isLoadingImage ? "https://placehold.co/1080x1080.png?text=Resim+Yükleniyor..." : imageUrl;
 
-  const handleShareToInstagram = async () => {
-    if (!post || !post.id || !post.caption || !post.imageUrl || !post.hashtags) {
-      toast({
-        title: 'Paylaşım Hatası',
-        description: 'Paylaşılacak gönderi bilgisi eksik.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    const accessToken = localStorage.getItem(INSTAGRAM_TOKEN_KEY);
-    if (!accessToken) {
-      toast({
-        title: 'Bağlantı Gerekli',
-        description: (
-            <div className="flex flex-col gap-2">
-                <p>Instagram gönderi paylaşımını denemek için önce Ayarlar sayfasından bir Erişim Belirteci girmelisiniz.</p>
-                <p className="text-xs font-semibold text-yellow-400 flex items-center gap-1"><AlertTriangle className="h-4 w-4" /> Bu belirteç yerel depolamada saklanır ve GÜVENLİ DEĞİLDİR.</p>
-            </div>
-        ),
-        variant: 'destructive',
-        duration: 7000,
-      });
-      return;
-    }
-
-    setIsSharing(true);
-    try {
-      const result = await sharePostToInstagramAction(post as Post, accessToken);
-      if (result.success) {
-        toast({
-            title: 'Instagram API Denemesi Başarılı',
-            description: result.message,
-        });
-      } else {
-        toast({
-            title: 'Instagram API Denemesi Başarısız',
-            description: result.message,
-            variant: 'destructive',
-            duration: 10000,
-        });
-      }
-    } catch (error) {
-      toast({
-        title: 'Paylaşım Denemesi Hatası',
-        description: (error as Error).message,
-        variant: 'destructive',
-        duration: 10000,
-      });
-    }
-    setIsSharing(false);
-  };
-
-  const handleSendEmail = async () => {
-    if (!post || !post.id || !post.caption || !post.imageUrl || !post.hashtags) {
-      toast({
-        title: 'E-posta Gönderme Hatası',
-        description: 'E-posta ile gönderilecek gönderi bilgisi eksik.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    const recipientEmail = localStorage.getItem(EMAIL_RECIPIENT_KEY);
-    if (!recipientEmail) {
-      toast({
-        title: 'Alıcı E-posta Eksik',
-        description: 'Lütfen Ayarlar sayfasından bir alıcı e-posta adresi belirleyin.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    setIsSendingEmail(true);
-    try {
-      const result = await sendContentByEmailAction(post as Post, recipientEmail);
-      if (result.success) {
-        toast({
-          title: 'E-posta Gönderildi',
-          description: result.message,
-        });
-      } else {
-        toast({
-          title: 'E-posta Gönderme Başarısız',
-          description: result.message,
-          variant: 'destructive',
-          duration: 10000, 
-        });
-      }
-    } catch (error) {
-      toast({
-        title: 'E-posta Gönderme Hatası',
-        description: (error as Error).message,
-        variant: 'destructive',
-        duration: 10000,
-      });
-    }
-    setIsSendingEmail(false);
-  };
-
+  // handleShareToInstagram fonksiyonu kaldırıldı
+  // handleSendEmail fonksiyonu kaldırıldı
 
   return (
     <Card className="w-full max-w-md shadow-xl flex flex-col">
@@ -219,29 +118,7 @@ export function PostPreviewCard({ post, title = "Gönderi Önizlemesi", isLoadin
                 Planlanan Tarih: {clientFormattedTime ? clientFormattedTime : 'Zaman yükleniyor...'}
             </div>
         )}
-        {showShareButton && post.status === 'approved' && id && (
-          <div className="w-full space-y-2 mt-2">
-            <Button
-              onClick={handleShareToInstagram}
-              disabled={isSharing || isSendingEmail}
-              className="w-full bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 text-white hover:opacity-90"
-              size="sm"
-            >
-              {isSharing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Share2 className="mr-2 h-4 w-4" />}
-              {isSharing ? 'Paylaşılıyor...' : "Instagram'da Paylaş (GERÇEK API DENEMESİ)"}
-            </Button>
-            <Button
-              onClick={handleSendEmail}
-              disabled={isSendingEmail || isSharing}
-              variant="outline"
-              className="w-full border-blue-500 text-blue-500 hover:bg-blue-500/10 hover:text-blue-600"
-              size="sm"
-            >
-              {isSendingEmail ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Mail className="mr-2 h-4 w-4" />}
-              {isSendingEmail ? 'Gönderiliyor...' : "İçeriği E-posta İle Gönder"}
-            </Button>
-          </div>
-        )}
+        {/* Paylaşım butonları buradan kaldırıldı */}
       </CardFooter>
     </Card>
   );
