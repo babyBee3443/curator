@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { CalendarDays, Hash, Image as ImageIcon, Loader2, Sparkles, Share2 } from 'lucide-react';
+import { CalendarDays, Hash, Image as ImageIcon, Loader2, Sparkles, Share2, AlertTriangle } from 'lucide-react';
 import type { Post } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { sharePostToInstagramAction } from '@/lib/actions';
@@ -17,6 +17,8 @@ interface PostPreviewCardProps {
   isLoadingImage?: boolean;
   showShareButton?: boolean;
 }
+
+const INSTAGRAM_TOKEN_KEY = 'instagramAccessToken_sim';
 
 export function PostPreviewCard({ post, title = "Gönderi Önizlemesi", isLoadingImage = false, showShareButton = false }: PostPreviewCardProps) {
   const { id, imageUrl, imageHint, caption, hashtags, simulatedPostTime } = post;
@@ -31,7 +33,7 @@ export function PostPreviewCard({ post, title = "Gönderi Önizlemesi", isLoadin
       } catch (e) {
         setClientFormattedTime(new Date(simulatedPostTime).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'medium'}));
       }
-    } else if (typeof simulatedPostTime === 'string') { 
+    } else if (typeof simulatedPostTime === 'string') {
         const dateObj = new Date(simulatedPostTime);
         if (!isNaN(dateObj.getTime())) {
              try {
@@ -44,7 +46,7 @@ export function PostPreviewCard({ post, title = "Gönderi Önizlemesi", isLoadin
         }
     }
      else {
-      setClientFormattedTime(null);
+      setClientFormattedTime('Zaman yükleniyor...');
     }
   }, [simulatedPostTime]);
 
@@ -59,9 +61,26 @@ export function PostPreviewCard({ post, title = "Gönderi Önizlemesi", isLoadin
       });
       return;
     }
+
+    const accessToken = localStorage.getItem(INSTAGRAM_TOKEN_KEY);
+    if (!accessToken) {
+      toast({
+        title: 'Bağlantı Gerekli',
+        description: (
+            <div className="flex flex-col gap-2">
+                <p>Instagram gönderi simülasyonu için önce Ayarlar sayfasından bir Erişim Belirteci girmelisiniz.</p>
+                <p className="text-xs font-semibold text-yellow-400 flex items-center gap-1"><AlertTriangle className="h-4 w-4" /> Bu işlem güvensizdir ve sadece test amaçlıdır!</p>
+            </div>
+        ),
+        variant: 'destructive',
+        duration: 7000,
+      });
+      return;
+    }
+
     setIsSharing(true);
     try {
-      const result = await sharePostToInstagramAction(post as Post);
+      const result = await sharePostToInstagramAction(post as Post, accessToken);
       toast({
         title: 'Paylaşım Simülasyonu Başarılı',
         description: result.message,
@@ -100,7 +119,7 @@ export function PostPreviewCard({ post, title = "Gönderi Önizlemesi", isLoadin
               height={1080}
               className="object-cover w-full h-full"
               data-ai-hint={imageHint || "teknoloji uzay"}
-              unoptimized={displayImageUrl.startsWith('data:image')} 
+              unoptimized={displayImageUrl.startsWith('data:image')}
             />
           </div>
         )}
@@ -124,7 +143,7 @@ export function PostPreviewCard({ post, title = "Gönderi Önizlemesi", isLoadin
             </div>
           </div>
         )}
-        {caption && ( 
+        {caption && (
           <div className="pt-2 text-center">
             <p className="text-xs text-muted-foreground/70 flex items-center justify-center gap-1">
               <Sparkles className="h-3 w-3" />
@@ -141,9 +160,9 @@ export function PostPreviewCard({ post, title = "Gönderi Önizlemesi", isLoadin
             </div>
         )}
         {showShareButton && post.status === 'approved' && id && (
-          <Button 
-            onClick={handleShareToInstagram} 
-            disabled={isSharing} 
+          <Button
+            onClick={handleShareToInstagram}
+            disabled={isSharing}
             className="w-full mt-2 bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 text-white hover:opacity-90"
             size="sm"
           >
@@ -155,3 +174,5 @@ export function PostPreviewCard({ post, title = "Gönderi Önizlemesi", isLoadin
     </Card>
   );
 }
+
+    

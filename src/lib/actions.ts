@@ -26,7 +26,7 @@ export async function generateFullPostAction(): Promise<FullPostGenerationOutput
     }
 
     // Sadece konu başlığını resim istemi olarak kullan
-    const imagePrompt = idea.topic; 
+    const imagePrompt = idea.topic;
 
     // 2. Resim ve Başlık Üretimini Paralelleştir
     const [imageResult, captionResult] = await Promise.all([
@@ -65,86 +65,75 @@ export async function generateFullPostAction(): Promise<FullPostGenerationOutput
   }
 }
 
-// Bu eylemler mevcut işlevsellik için korunuyor, ancak yeni UI doğrudan bunları kullanmıyor olabilir.
-export async function generateCaptionAction(input: GeneratePostCaptionInput): Promise<GeneratePostCaptionOutput> {
-  try {
-    return await generatePostCaptionFlow(input);
-  } catch (error) {
-    console.error('Gönderi başlığı oluşturulurken hata oluştu:', error);
-    throw new Error('Yapay zeka başlık oluştururken bir sorunla karşılaştı. Lütfen konu ve anahtar bilgileri kontrol edip tekrar deneyin.');
-  }
-}
+export async function sharePostToInstagramAction(post: Post, accessToken?: string): Promise<{ success: boolean; message: string }> {
+  console.log(`Instagram'da paylaşılmak üzere alınan gönderi (ID: ${post.id})`);
 
-export async function optimizeHashtagsAction(input: OptimizePostHashtagsInput): Promise<OptimizePostHashtagsOutput> {
-  try {
-    return await optimizePostHashtagsFlow(input);
-  } catch (error) {
-    console.error('Hashtag\'ler optimize edilirken hata oluştu:', error);
-    throw new Error('Yapay zeka hashtagleri optimize ederken bir sorunla karşılaştı. Lütfen başlığın ve konunun dolu olduğundan emin olun.');
+  if (!accessToken) {
+    console.error(`Gönderi (ID: ${post.id}) paylaşılamadı: Erişim Belirteci (Access Token) eksik.`);
+    throw new Error(`Erişim Belirteci (Access Token) eksik. Lütfen Ayarlar sayfasından belirtecinizi girin (Sadece Test Amaçlı!).`);
   }
-}
 
-export async function generateImageAction(input: GeneratePostImageInput): Promise<GeneratePostImageOutput> {
-  try {
-    return await generatePostImageFlow(input);
-  } catch (error) {
-    console.error('Resim oluşturulurken hata oluştu:', error);
-    throw new Error('Yapay zeka resim oluştururken bir sorunla karşılaştı. Lütfen isteminizi kontrol edip tekrar deneyin veya farklı bir konu deneyin.');
-  }
-}
-
-export async function sharePostToInstagramAction(post: Post): Promise<{ success: boolean; message: string }> {
-  console.log(`Instagram'da paylaşılmak üzere alınan gönderi (ID: ${post.id}):`, {
+  console.log(`Kullanılacak Erişim Belirteci (SİMÜLASYON - İlk 10 karakter): ${accessToken.substring(0, 10)}...`);
+  console.log('Gönderi verileri (SİMÜLASYON):', {
     caption: post.caption,
-    imageUrl: post.imageUrl ? post.imageUrl.substring(0, 100) + '...' : 'No image URL',
+    imageUrl: post.imageUrl ? post.imageUrl.substring(0, 60) + '...' : 'No image URL', // Data URI'ler çok uzun olabilir
     hashtags: post.hashtags,
   });
 
-  await new Promise(resolve => setTimeout(resolve, 1500));
+  // SİMÜLASYON: Burada gerçek Instagram API çağrısı yapılırdı.
+  // Örnek:
+  // const instagramApiUrl = `https://graph.facebook.com/v19.0/me/media`;
+  // const response = await fetch(instagramApiUrl, {
+  //   method: 'POST',
+  //   headers: { 'Content-Type': 'application/json' },
+  //   body: JSON.stringify({
+  //     image_url: post.imageUrl, // veya video_url
+  //     caption: `${post.caption}\n\n${post.hashtags.map(h => `#${h}`).join(' ')}`,
+  //     access_token: accessToken,
+  //   }),
+  // });
+  // const data = await response.json();
+  // if (!response.ok || data.error) { throw new Error(data.error?.message || 'Instagram API hatası'); }
+  // Ardından media_publish çağrısı gerekebilir.
+
+  await new Promise(resolve => setTimeout(resolve, 1500)); // API çağrısını simüle etmek için gecikme
   const isSuccess = Math.random() > 0.1; // %90 başarı şansı simülasyonu
 
   if (isSuccess) {
     console.log(`Gönderi (ID: ${post.id}) Instagram'a başarıyla gönderildi (SİMÜLASYON).`);
-    return { success: true, message: `Gönderi (ID: ${post.id}) başarıyla paylaşıldı (Simülasyon).` };
+    return { success: true, message: `Gönderi (ID: ${post.id}) başarıyla paylaşıldı (Simülasyon). Belirteç kullanıldı.` };
   } else {
     console.error(`Gönderi (ID: ${post.id}) Instagram'a gönderilemedi (SİMÜLASYON).`);
     throw new Error(`Gönderi (ID: ${post.id}) paylaşılamadı. Ağ hatası veya API sorunu olabilir (Simülasyon).`);
   }
 }
 
-// --- Instagram Bağlantısı için Yer Tutucu Eylemler ---
 
-export async function getInstagramConnectionStatusAction(): Promise<{ connected: boolean; username: string | null; error?: string }> {
-  console.warn('getInstagramConnectionStatusAction çağrıldı - BU BİR SİMÜLASYONDUR.');
-  // Gerçek bir uygulamada, burada güvenli bir şekilde saklanan OAuth token'ları vb. kontrol edilir.
-  // Şimdilik, örneğin bir veritabanı veya güvenli sunucu tarafı depolama olmadığını varsayalım.
-  // Bu fonksiyonun istemci tarafında simüle edilmesi daha uygun olabilir (localStorage ile)
-  // ya da backend'de gerçek bir durum yönetimi gerektirir.
-  // Örnek olarak her zaman "bağlı değil" döndürelim ki UI'da mantığı görebilelim.
-  return { connected: false, username: null };
-}
+// --- Instagram Bağlantısı için ESKİ Yer Tutucu Eylemler (Artık doğrudan Ayarlar sayfasında yönetiliyor) ---
+// Bu eylemler artık Ayarlar sayfasındaki istemci tarafı mantıkla ele alındığı için kaldırılabilir veya yorum satırına alınabilir.
+// Şimdilik referans olarak bırakıyorum ama aktif olarak kullanılmıyorlar.
 
-export async function initiateInstagramOAuthAction(): Promise<{ redirectUrl?: string; error?: string }> {
-  console.warn('initiateInstagramOAuthAction çağrıldı - BU BİR SİMÜLASYONDUR.');
-  // Gerçek bir uygulamada, bu fonksiyon Instagram OAuth için bir yönlendirme URL'si oluşturur
-  // ve bunu istemciye döndürür. İstemci kullanıcıyı bu URL'ye yönlendirir.
-  // Örn: return { redirectUrl: 'https://api.instagram.com/oauth/authorize?client_id=...' };
-  return { error: 'Instagram OAuth akışı başlatma özelliği henüz tam olarak uygulanmadı.' };
-}
+// export async function getInstagramConnectionStatusAction(): Promise<{ connected: boolean; username: string | null; error?: string }> {
+//   console.warn('getInstagramConnectionStatusAction çağrıldı - BU BİR SİMÜLASYONDUR.');
+//   return { connected: false, username: null };
+// }
 
-export async function completeInstagramOAuthAction(code: string): Promise<{ success: boolean; username?: string; error?: string }> {
-  console.warn('completeInstagramOAuthAction çağrıldı - BU BİR SİMÜLASYONDUR.');
-  // Instagram'dan geri dönen `code` ile access token alınır ve güvenli bir şekilde saklanır.
-  // Kullanıcı adı gibi bilgiler de alınabilir.
-  if (code) {
-    // Simülasyon: Başarılı
-    return { success: true, username: 'simulated_user' };
-  }
-  return { success: false, error: 'Geçersiz yetkilendirme kodu (Simülasyon).' };
-}
+// export async function initiateInstagramOAuthAction(): Promise<{ redirectUrl?: string; error?: string }> {
+//   console.warn('initiateInstagramOAuthAction çağrıldı - BU BİR SİMÜLASYONDUR.');
+//   return { error: 'Instagram OAuth akışı başlatma özelliği henüz tam olarak uygulanmadı.' };
+// }
 
-export async function disconnectInstagramAction(): Promise<{ success: boolean; error?: string }> {
-  console.warn('disconnectInstagramAction çağrıldı - BU BİR SİMÜLASYONDUR.');
-  // Saklanan token'lar silinir/geçersiz kılınır.
-  return { success: true };
-}
+// export async function completeInstagramOAuthAction(code: string): Promise<{ success: boolean; username?: string; error?: string }> {
+//   console.warn('completeInstagramOAuthAction çağrıldı - BU BİR SİMÜLASYONDUR.');
+//   if (code) {
+//     return { success: true, username: 'simulated_user' };
+//   }
+//   return { success: false, error: 'Geçersiz yetkilendirme kodu (Simülasyon).' };
+// }
+
+// export async function disconnectInstagramAction(): Promise<{ success: boolean; error?: string }> {
+//   console.warn('disconnectInstagramAction çağrıldı - BU BİR SİMÜLASYONDUR.');
+//   return { success: true };
+// }
+
+    

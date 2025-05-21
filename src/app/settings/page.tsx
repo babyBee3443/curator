@@ -6,61 +6,69 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
-import { Instagram, Loader2 } from 'lucide-react';
+import { Instagram, Loader2, KeyRound, AlertTriangle } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
-// Gelecekte kullanılacak gerçek eylemler için yer tutucular:
-// import { connectToInstagramAction, getInstagramConnectionStatusAction, disconnectFromInstagramAction } from '@/lib/actions';
+const INSTAGRAM_TOKEN_KEY = 'instagramAccessToken_sim';
+const INSTAGRAM_USERNAME_KEY = 'instagramUsername_sim'; // Kullanıcı adı için de bir anahtar
 
 export default function SettingsPage() {
   const { toast } = useToast();
+  const [accessToken, setAccessToken] = useState('');
   const [isConnected, setIsConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [username, setUsername] = useState<string | null>(null);
 
   useEffect(() => {
-    // Tarayıcıda simüle edilmiş bağlantı durumunu kontrol et
-    const mockStatus = localStorage.getItem('instagramConnected_sim');
-    const mockUsername = localStorage.getItem('instagramUsername_sim');
-    if (mockStatus === 'true' && mockUsername) {
+    const storedToken = localStorage.getItem(INSTAGRAM_TOKEN_KEY);
+    const storedUsername = localStorage.getItem(INSTAGRAM_USERNAME_KEY);
+    if (storedToken) {
       setIsConnected(true);
-      setUsername(mockUsername);
+      setUsername(storedUsername || 'Bilinmeyen Kullanıcı'); // Kullanıcı adı yoksa varsayılan
     }
     setIsLoading(false);
   }, []);
 
-  const handleConnectInstagram = async () => {
-    setIsLoading(true);
-    toast({
-      title: 'Instagram Bağlantısı Kuruluyor... (Simülasyon)',
-      description: 'Bu adımda normalde Instagram\'ın kimlik doğrulama sayfasına yönlendirilirsiniz.',
-    });
-
-    // Simülasyon: 1.5 saniye sonra başarılı bağlantı
-    setTimeout(() => {
-      localStorage.setItem('instagramConnected_sim', 'true');
-      localStorage.setItem('instagramUsername_sim', 'kozmos_kuratoru_test');
-      setIsConnected(true);
-      setUsername('kozmos_kuratoru_test');
-      setIsLoading(false);
+  const handleSaveToken = () => {
+    if (!accessToken.trim()) {
       toast({
-        title: 'Bağlantı Başarılı! (Simülasyon)',
-        description: '@kozmos_kuratoru_test hesabınız bağlandı.',
-        className: 'bg-green-600 text-white',
+        title: 'Eksik Bilgi',
+        description: 'Lütfen geçerli bir Instagram Erişim Belirteci girin.',
+        variant: 'destructive',
       });
-    }, 1500);
+      return;
+    }
+    setIsLoading(true);
+    // SİMÜLASYON: Gerçek bir API çağrısı yok. Sadece localStorage'a kaydediyoruz.
+    localStorage.setItem(INSTAGRAM_TOKEN_KEY, accessToken);
+    // Kullanıcı adı için basit bir yer tutucu, gerçekte bu API'den alınır.
+    const simulatedUsername = `kullanici_${Math.random().toString(36).substring(2, 7)}`;
+    localStorage.setItem(INSTAGRAM_USERNAME_KEY, simulatedUsername);
+
+    setUsername(simulatedUsername);
+    setIsConnected(true);
+    setIsLoading(false);
+    setAccessToken(''); // Giriş alanını temizle
+    toast({
+      title: 'Belirteç Kaydedildi (Simülasyon)',
+      description: `${simulatedUsername} adına belirteciniz yerel olarak (tarayıcıda) saklandı. GERÇEK KULLANIM İÇİN BU GÜVENLİ DEĞİLDİR!`,
+      className: 'bg-yellow-500 text-black',
+      duration: 7000,
+    });
   };
 
-  const handleDisconnectInstagram = async () => {
+  const handleDisconnectInstagram = () => {
     setIsLoading(true);
-    // Simülasyon: Bağlantıyı kes
-    localStorage.removeItem('instagramConnected_sim');
-    localStorage.removeItem('instagramUsername_sim');
+    localStorage.removeItem(INSTAGRAM_TOKEN_KEY);
+    localStorage.removeItem(INSTAGRAM_USERNAME_KEY);
     setIsConnected(false);
     setUsername(null);
     setIsLoading(false);
     toast({
       title: 'Bağlantı Kesildi (Simülasyon)',
-      description: 'Instagram hesap bağlantınız kaldırıldı.',
+      description: 'Instagram Erişim Belirteciniz yerel depolamadan kaldırıldı.',
     });
   };
 
@@ -80,59 +88,94 @@ export default function SettingsPage() {
         <CardHeader>
           <CardTitle className="text-xl flex items-center gap-2">
             <Instagram className="h-6 w-6 text-pink-600" />
-            Instagram Bağlantısı
+            Instagram Bağlantısı (Simülasyon ve Test Amaçlı)
           </CardTitle>
           <CardDescription>
-            Kozmos Küratörü'nü Instagram hesabınıza bağlayarak gönderi paylaşımını (gelecekte) otomatikleştirin.
+            Instagram Erişim Belirtecinizi (Access Token) buraya girerek gönderi paylaşım simülasyonunu etkinleştirin.
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          {isLoading && !isConnected && ( // Sadece ilk yüklemede ve bağlantı yokken göster
+        <CardContent className="space-y-6">
+          <Alert variant="destructive" className="bg-red-900 border-red-700 text-white">
+            <AlertTriangle className="h-5 w-5 text-yellow-300" />
+            <AlertTitle className="text-yellow-300 font-bold">ÇOK ÖNEMLİ GÜVENLİK UYARISI!</AlertTitle>
+            <AlertDescription className="text-neutral-200">
+              Bu bölüm **sadece test ve geliştirme simülasyonu** içindir. Gerçek Instagram Erişim Belirteçlerini (Access Token) doğrudan tarayıcıya girmek ve yerel depolamada (`localStorage`) saklamak **KESİNLİKLE GÜVENLİ DEĞİLDİR**.
+              Gerçek bir uygulamada, erişim belirteçleri sunucu tarafında güvenli bir şekilde saklanmalı ve yönetilmelidir (OAuth 2.0 akışı ile).
+              Buraya girdiğiniz belirteçler tarayıcınızda kalır ve yetkisiz erişime açık olabilir. **Lütfen bu özelliği sadece kısa süreli testler için ve üretim dışı (test) belirteçleriyle kullanın.**
+            </AlertDescription>
+          </Alert>
+
+          {isLoading && (
             <div className="flex items-center space-x-2 text-muted-foreground">
               <Loader2 className="h-5 w-5 animate-spin" />
               <span>Bağlantı durumu kontrol ediliyor...</span>
             </div>
           )}
+
           {!isLoading && isConnected && username && (
-            <div className="space-y-4">
-              <p className="text-green-600 font-semibold">
-                Instagram hesabına bağlı: <span className="font-bold">@{username}</span> (Simülasyon)
+            <div className="space-y-3 p-4 border border-green-500 rounded-md bg-green-500/10">
+              <p className="text-green-400 font-semibold">
+                Instagram hesabına yerel belirteç ile bağlı (Simülasyon): <span className="font-bold text-green-300">@{username}</span>
               </p>
-              <Button variant="outline" onClick={handleDisconnectInstagram} disabled={isLoading}>
-                {isLoading && username ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                Bağlantıyı Kes (Simülasyon)
+              <Button variant="outline" onClick={handleDisconnectInstagram} disabled={isLoading} className="border-red-500 text-red-500 hover:bg-red-500/10">
+                {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                Bağlantıyı Kes (Yerel Belirteci Sil)
               </Button>
             </div>
           )}
+
           {!isLoading && !isConnected && (
             <div className="space-y-4">
-              <p className="text-muted-foreground">
-                Henüz Instagram hesabınızı bağlamadınız.
-              </p>
-              <Button 
-                onClick={handleConnectInstagram} 
-                disabled={isLoading}
-                className="bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 text-white hover:opacity-90"
+              <div>
+                <Label htmlFor="accessToken" className="text-base font-medium text-foreground mb-2 flex items-center gap-1">
+                  <KeyRound className="h-5 w-5 text-accent" />
+                  Instagram Erişim Belirteci (Access Token):
+                </Label>
+                <Input
+                  id="accessToken"
+                  type="password" // Hassas bilgi olduğu için maskeleyelim
+                  value={accessToken}
+                  onChange={(e) => setAccessToken(e.target.value)}
+                  placeholder="Meta Geliştirici Portalından aldığınız belirteci buraya yapıştırın"
+                  className="text-sm"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Bu belirteç sadece tarayıcınızda saklanacaktır ve GÜVENLİ DEĞİLDİR. Test amaçlı kullanın.
+                </p>
+              </div>
+              <Button
+                onClick={handleSaveToken}
+                disabled={isLoading || !accessToken.trim()}
+                className="bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 text-white hover:opacity-90 w-full"
               >
-                {isLoading && !username ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Instagram className="mr-2 h-5 w-5" />}
-                Instagram'a Bağlan (Simülasyon)
+                {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Instagram className="mr-2 h-5 w-5" />}
+                Erişim Belirtecini Kaydet ve Bağlan (Simülasyon)
               </Button>
             </div>
           )}
+
           <div className="mt-6 p-4 border rounded-md bg-muted/50">
-            <h4 className="font-semibold text-sm text-foreground mb-2">Gerçek Instagram Entegrasyonu Hakkında Not:</h4>
+            <h4 className="font-semibold text-sm text-foreground mb-2">Gerçek Instagram Entegrasyonu Adımları:</h4>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Bu sayfada gördüğünüz Instagram bağlantı işlevi şu anda bir **simülasyondur**. Gerçek bir Instagram entegrasyonu aşağıdaki gibi adımları içerir ve kapsamlı backend geliştirmesi gerektirir:
+              Bu sayfadaki işlevsellik, gerçek bir Instagram entegrasyonunun **çok basitleştirilmiş bir simülasyonudur**. Gerçek bir entegrasyon aşağıdaki gibi adımları içerir:
             </p>
-            <ul className="list-disc list-inside text-xs text-muted-foreground mt-2 space-y-1">
-              <li>Meta (Facebook) Geliştirici Portalı'nda bir uygulama oluşturulması ve API anahtarlarının (Client ID, Client Secret) alınması.</li>
-              <li>Güvenli OAuth 2.0 kimlik doğrulama akışının sunucu tarafında (backend) uygulanması. Bu, kullanıcıyı Instagram'a yönlendirmeyi, geri dönen yetkilendirme kodunu almayı ve bu kodu bir erişim token'ı ile değiştirmeyi içerir.</li>
-              <li>Erişim token'larının (access tokens) ve yenileme token'larının (refresh tokens) güvenli bir şekilde sunucu tarafında saklanması ve yönetilmesi.</li>
-              <li>Bu token'ları kullanarak Instagram API'lerine (içerik yayınlama, profil bilgisi alma vb.) isteklerin yapılması.</li>
-              <li>API kullanım limitlerinin ve hata yönetiminin ele alınması.</li>
-            </ul>
-            <p className="text-xs text-muted-foreground mt-3">
-              Bu adımlar, güvenlik ve stabilite açısından kritik öneme sahiptir ve genellikle özel backend geliştirme uzmanlığı gerektirir. Mevcut arayüz, bu karmaşık sürecin bir başlangıç noktası olarak tasarlanmıştır.
+            <ol className="list-decimal list-inside text-xs text-muted-foreground mt-2 space-y-1">
+              <li>**Meta Geliştirici Hesabı ve Uygulama Oluşturma:** Meta for Developers portalında bir hesap açın ve yeni bir uygulama kaydedin.</li>
+              <li>**Instagram Graph API Ürününü Ekleme:** Oluşturduğunuz uygulamaya "Instagram Graph API" ürününü ekleyin ve gerekli izinleri (örn: `instagram_content_publish`) yapılandırın.</li>
+              <li>**OAuth 2.0 Yönlendirme URL'lerini Ayarlama:** Güvenli kimlik doğrulama akışı için geçerli yönlendirme (redirect) URI'ları belirleyin.</li>
+              <li>**Sunucu Tarafında OAuth Akışını Uygulama:**
+                <ul className="list-disc list-inside ml-4">
+                  <li>Kullanıcıyı Instagram'ın yetkilendirme sayfasına yönlendirin.</li>
+                  <li>Kullanıcı izin verdikten sonra uygulamanızın yönlendirme URI'sına dönen yetkilendirme kodunu alın.</li>
+                  <li>Bu kodu, sunucu tarafında bir Instagram Kullanıcı Erişim Belirteci (Access Token) ile değiştirin. Bu işlem için Uygulama Kimliğiniz (App ID) ve Uygulama Sırrınız (App Secret) gerekir.</li>
+                </ul>
+              </li>
+              <li>**Erişim Belirteçlerini Güvenli Saklama:** Elde edilen erişim belirteçlerini (ve varsa yenileme belirteçlerini) sunucu tarafında, şifrelenmiş ve güvenli bir veritabanında saklayın.</li>
+              <li>**API İsteklerini Sunucu Üzerinden Yapma:** Instagram API'lerine (örneğin gönderi paylaşma) tüm istekleri, sakladığınız erişim belirtecini kullanarak sunucu tarafındaki kodunuzdan yapın. Erişim belirtecini asla istemci tarafına (tarayıcıya) göndermeyin.</li>
+              <li>**Belirteç Yenileme ve Hata Yönetimi:** Uzun ömürlü belirteçlerin süresi dolmadan önce yenileyin ve API'den gelebilecek hataları uygun şekilde yönetin.</li>
+            </ol>
+            <p className="text-xs text-muted-foreground mt-3 font-semibold">
+              Bu adımlar, güvenlik ve stabilite açısından kritik öneme sahiptir ve genellikle özel backend geliştirme uzmanlığı gerektirir.
             </p>
           </div>
         </CardContent>
@@ -140,3 +183,5 @@ export default function SettingsPage() {
     </div>
   );
 }
+
+    
