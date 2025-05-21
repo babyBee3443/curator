@@ -85,17 +85,18 @@ export default function SettingsPage() {
                 <p className="font-semibold text-yellow-300">Gerçek E-posta Gönderimi İçin YAPILMASI ZORUNLU Adımlar:</p>
                 <ol className="list-decimal list-inside text-sm pl-4 space-y-2">
                   <li>
-                    <strong>Nodemailer Kurulumu (Eğer yapmadıysanız):</strong> Bu özellik için `nodemailer` kütüphanesi projenize eklenmiştir. Eğer `node_modules` klasörünüzde bir sorun olduğunu düşünüyorsanız veya `package.json` dosyasında `nodemailer` görünmüyorsa, projenizin ana dizininde terminali açıp <code className="bg-black/50 px-1 py-0.5 rounded">npm install nodemailer</code> (veya <code className="bg-black/50 px-1 py-0.5 rounded">yarn add nodemailer</code>) komutunu tekrar çalıştırın.
+                    <strong>Nodemailer Kurulumu (Eğer yapmadıysanız):</strong> Projenizin ana dizininde terminali açıp <code className="bg-black/50 px-1 py-0.5 rounded">npm install nodemailer</code> (veya <code className="bg-black/50 px-1 py-0.5 rounded">yarn add nodemailer</code>) komutunu çalıştırarak Nodemailer kütüphanesini kurun. Bu, `package.json` dosyanıza Nodemailer'ı ekleyecektir.
                   </li>
                   <li>
-                    <strong>`.env.local` Dosyası Oluşturun (veya Kontrol Edin):</strong>
+                    <strong>`.env.local` Dosyası Oluşturun (EN KRİTİK ADIM!):</strong>
                     <ul className="list-disc list-inside pl-4 mt-1 text-xs">
-                      <li>Projenizin **ANA DİZİNİNDE** (yani `package.json` dosyasının bulunduğu yerde) `.env.local` adında bir dosya oluşturun.</li>
-                      <li>Eğer dosya zaten varsa, içeriğini ve adını (başında nokta olduğundan emin olun) kontrol edin.</li>
+                      <li>Projenizin **ANA DİZİNİNDE** (yani `package.json`, `.git`, `.env` dosyalarının bulunduğu yerde) **`.env.local`** adında bir dosya oluşturun.</li>
+                      <li>Dosya adının **tam olarak** <code className="text-yellow-300">.env.local</code> olduğundan emin olun (başında nokta var, uzantısı `.local`).</li>
+                      <li>Eğer dosya zaten varsa, içeriğini kontrol edin.</li>
                     </ul>
                   </li>
                   <li>
-                    <strong>Ortam Değişkenlerini Ekleyin (TAM OLARAK BU ŞEKİLDE):</strong> `.env.local` dosyasının içine aşağıdaki satırları **tam olarak bu şekilde** ekleyin ve kendi bilgilerinizle değiştirin (başında veya sonunda fazladan boşluk olmamalı):
+                    <strong>Ortam Değişkenlerini `.env.local` Dosyasına Ekleyin:</strong> Aşağıdaki satırları **tam olarak bu şekilde** oluşturduğunuz **`.env.local`** dosyasının içine kopyalayıp yapıştırın ve kendi bilgilerinizle değiştirin (başında veya sonunda fazladan boşluk olmamalı):
                     <pre className="mt-2 p-3 bg-black/50 rounded text-xs whitespace-pre-wrap text-blue-100"><code>EMAIL_SENDER_ADDRESS=getdusbox@gmail.com{'\n'}EMAIL_APP_PASSWORD=qdti jdwa wxpd tkwl</code></pre>
                     <ul className="list-disc list-inside pl-4 text-xs mt-1">
                         <li><code className="text-yellow-300">EMAIL_SENDER_ADDRESS</code>: E-postaların gönderileceği sizin Gmail adresiniz.</li>
@@ -160,3 +161,5 @@ export default function SettingsPage() {
     </div>
   );
 }
+
+    

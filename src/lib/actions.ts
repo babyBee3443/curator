@@ -1,15 +1,16 @@
 
 'use server';
 
-// .env.local dosyasını yüklemeyi dene (Next.js normalde bunu yapar ama emin olmak için)
 import { config as dotenvConfig } from 'dotenv';
-dotenvConfig(); // Bu, projenin kök dizinindeki .env ve .env.local dosyalarını yükler
+// Ortam değişkenlerini yüklemeyi dene (Next.js normalde bunu yapar ama Genkit/actions için ek güvence)
+// Proje kök dizinindeki .env ve .env.local dosyalarını arar.
+dotenvConfig(); 
 
 import type { Post } from '@/types';
 import nodemailer from 'nodemailer';
 
-// Bu loglar, dosya her yüklendiğinde çalışır ve process.env'nin o andaki durumunu gösterir.
-// dotenvConfig() çağrısından sonraki durumu görmek önemlidir.
+// Bu loglar, dosya her yüklendiğinde (sunucu başladığında veya dosya değiştiğinde) çalışır.
+// Ortam değişkenlerinin Next.js tarafından doğru şekilde yüklenip yüklenmediğini gösterir.
 console.log('[ACTIONS.TS] MODÜL YÜKLENDİ - Ortam Değişkenleri Kontrolü:');
 console.log(`[ACTIONS.TS] > process.env.EMAIL_SENDER_ADDRESS: "${process.env.EMAIL_SENDER_ADDRESS ? process.env.EMAIL_SENDER_ADDRESS.substring(0,3) + '...' : 'BULUNAMADI'}"`);
 console.log(`[ACTIONS.TS] > process.env.EMAIL_APP_PASSWORD: "${process.env.EMAIL_APP_PASSWORD ? 'DEĞER MEVCUT (gizli)' : 'BULUNAMADI'}"`);
@@ -33,7 +34,7 @@ export async function generateFullPostAction(): Promise<FullPostGenerationOutput
       throw new Error('Yapay zeka geçerli bir içerik fikri üretemedi.');
     }
 
-    const imagePrompt = idea.topic;
+    const imagePrompt = idea.topic; // Sadece konu başlığını kullan
 
     const [imageResult, captionResult] = await Promise.all([
       generatePostImageFlow({ prompt: imagePrompt }),
@@ -76,6 +77,7 @@ export async function sendPostByEmail(
 ): Promise<{ success: boolean; message: string }> {
   console.log(`[sendPostByEmail] FONKSIYON ÇAĞRILDI. Alıcı: ${recipientEmail}`);
   
+  // Fonksiyon çağrıldığında ortam değişkenlerini tekrar kontrol et
   const senderEmail = process.env.EMAIL_SENDER_ADDRESS;
   const senderAppPassword = process.env.EMAIL_APP_PASSWORD;
 
@@ -151,3 +153,5 @@ import { suggestSingleContentIdea as suggestSingleContentIdeaFlow } from '@/ai/f
 import { generatePostCaption as generatePostCaptionFlow } from '@/ai/flows/generate-post-captions';
 import { optimizePostHashtags as optimizePostHashtagsFlow } from '@/ai/flows/optimize-post-hashtags';
 import { generatePostImage as generatePostImageFlow } from '@/ai/flows/generate-post-image';
+
+    
