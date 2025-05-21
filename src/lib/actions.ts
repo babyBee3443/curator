@@ -1,15 +1,14 @@
 
 'use server';
 
-import type { Post } from '@/types';
-import nodemailer from 'nodemailer';
-
 // Bu loglar, dosya her yüklendiğinde çalışır ve process.env'nin o andaki durumunu gösterir.
-// Ancak server action çalıştığında process.env farklı bir değere sahip olabilir.
-// Bu yüzden asıl kontrolü sendPostByEmail fonksiyonu içinde yapacağız.
 console.log('[ACTIONS.TS] Dosya Yüklendi - Ortam Değişkenleri Kontrolü (Başlangıç):');
 console.log(`[ACTIONS.TS] process.env.EMAIL_SENDER_ADDRESS (başlangıç): "${process.env.EMAIL_SENDER_ADDRESS ? process.env.EMAIL_SENDER_ADDRESS.substring(0,3) + '...' : 'BULUNAMADI'}"`);
 console.log(`[ACTIONS.TS] process.env.EMAIL_APP_PASSWORD (başlangıç): "${process.env.EMAIL_APP_PASSWORD ? 'DEĞER MEVCUT (gizli)' : 'BULUNAMADI'}"`);
+
+
+import type { Post } from '@/types';
+import nodemailer from 'nodemailer';
 
 
 export interface FullPostGenerationOutput {
@@ -67,43 +66,26 @@ export async function generateFullPostAction(): Promise<FullPostGenerationOutput
   }
 }
 
-export async function sharePostToInstagramAction(post: Post): Promise<{ success: boolean; message: string; instagramPostId?: string }> {
-  console.log(`[sharePostToInstagramAction] Instagram'da paylaşılmak üzere alınan gönderi (SİMÜLASYON - ID: ${post.id})`);
-  
-  const simulatedMessage = `Gönderi (ID: ${post.id}) için Instagram paylaşım simülasyonu tetiklendi. (Gerçek API çağrısı yapılmadı.)`;
-  console.log(`[sharePostToInstagramAction] ${simulatedMessage}`);
-  
-  return { 
-    success: true,
-    message: simulatedMessage,
-    instagramPostId: `simulated_${Date.now()}`
-  };
-}
-
 export async function sendPostByEmail(
   post: Post,
   recipientEmail: string
 ): Promise<{ success: boolean; message: string }> {
-  console.log(`[sendPostByEmail] Fonksiyon çağrıldı. Alıcı: ${recipientEmail}`);
+  console.log(`[sendPostByEmail] FONKSIYON ÇAĞRILDI. Alıcı: ${recipientEmail}`);
   
-  // Ortam değişkenlerini burada, fonksiyon her çağrıldığında KESİNLİKLE kontrol et
   const senderEmail = process.env.EMAIL_SENDER_ADDRESS;
   const senderAppPassword = process.env.EMAIL_APP_PASSWORD;
 
-  console.log(`[sendPostByEmail] Okunan process.env.EMAIL_SENDER_ADDRESS: "${senderEmail}", tipi: ${typeof senderEmail}`);
-  console.log(`[sendPostByEmail] Okunan process.env.EMAIL_APP_PASSWORD: "${senderAppPassword ? 'DEĞER MEVCUT (gizli)' : 'BULUNAMADI veya BOŞ'}", tipi: ${typeof senderAppPassword}`);
+  console.log(`[sendPostByEmail] 1. process.env.EMAIL_SENDER_ADDRESS DEĞERİ: "${senderEmail}" (tip: ${typeof senderEmail})`);
+  console.log(`[sendPostByEmail] 2. process.env.EMAIL_APP_PASSWORD DEĞERİ: "${senderAppPassword ? 'DEĞER MEVCUT (gizli)' : 'BULUNAMADI veya BOŞ'}" (tip: ${typeof senderAppPassword})`);
 
   if (!senderEmail || !senderAppPassword) {
     const errorMessage = 'E-posta gönderimi yapılandırma hatası: Gönderen bilgileri eksik. Lütfen .env.local dosyasını doğru yapılandırdığınızdan ve sunucuyu yeniden başlattığınızdan emin olun.';
-    console.error(`[sendPostByEmail] HATA: ${errorMessage}. senderEmail: ${senderEmail}, senderAppPassword: ${senderAppPassword ? 'Mevcut' : 'Mevcut Değil/Boş'}`);
+    console.error(`[sendPostByEmail] HATA: ${errorMessage}.`);
+    console.error(`[sendPostByEmail] HATA DETAYI - senderEmail: ${senderEmail}, senderAppPassword var mı: ${!!senderAppPassword}`);
     return { success: false, message: errorMessage };
   }
 
-  if (!recipientEmail || !recipientEmail.includes('@')) {
-    const errorMessage = 'Geçersiz alıcı e-posta adresi.';
-    console.error(`[sendPostByEmail] HATA: ${errorMessage}`);
-    return { success: false, message: errorMessage };
-  }
+  console.log(`[sendPostByEmail] Ortam değişkenleri OKUNABİLDİ. Gönderen: ${senderEmail}`);
 
   const transporter = nodemailer.createTransport({
     service: 'gmail',
@@ -139,14 +121,15 @@ export async function sendPostByEmail(
   };
 
   try {
+    console.log(`[sendPostByEmail] E-posta gönderimi deneniyor... Alıcı: ${recipientEmail}, Konu: "${emailSubject}"`);
     const info = await transporter.sendMail(mailOptions);
-    console.log(`[sendPostByEmail] E-posta başarıyla gönderildi. Alıcı: ${recipientEmail}, Konu: "${emailSubject}", Message ID: ${info.messageId}`);
+    console.log(`[sendPostByEmail] E-POSTA BAŞARIYLA GÖNDERİLDİ. Message ID: ${info.messageId}`);
     return {
       success: true,
       message: `E-posta başarıyla "${recipientEmail}" adresine gönderildi.`,
     };
   } catch (error) {
-    console.error(`[sendPostByEmail] E-posta gönderme hatası. Alıcı: ${recipientEmail}, Konu: "${emailSubject}"`, error);
+    console.error(`[sendPostByEmail] E-POSTA GÖNDERME HATASI. Alıcı: ${recipientEmail}, Konu: "${emailSubject}"`, error);
     let errorMessage = 'E-posta gönderilemedi. Lütfen sunucu loglarını kontrol edin.';
     if (error instanceof Error) {
       errorMessage = `E-posta gönderilemedi: ${error.message}. Gmail ayarlarınızı ve uygulama şifrenizi kontrol edin.`;
