@@ -5,7 +5,7 @@ export interface Post {
   keyInformation: string;
   caption: string;
   hashtags: string[];
-  imageUrl: string;
+  imageUrl: string; // Can be a placeholder URL or a data URI for generated images
   imageHint?: string;
   simulatedPostTime: Date;
   status: 'pending' | 'approved' | 'rejected';

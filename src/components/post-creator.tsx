@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -8,11 +9,11 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import type { Post, ContentIdea } from '@/types';
-import { suggestIdeasAction, generateCaptionAction, optimizeHashtagsAction } from '@/lib/actions';
+import { suggestIdeasAction, generateCaptionAction, optimizeHashtagsAction, generateImageAction } from '@/lib/actions';
 import { PostPreviewCard } from './post-preview-card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Lightbulb, Send, Sparkles, Tag, CheckCircle, XCircle } from 'lucide-react';
+import { Lightbulb, Send, Sparkles, Tag, CheckCircle, XCircle, Image as ImageIcon, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 interface PostCreatorProps {
@@ -24,11 +25,13 @@ export function PostCreator({ onPostApproved }: PostCreatorProps) {
   const [keyInformation, setKeyInformation] = useState('');
   const [caption, setCaption] = useState('');
   const [hashtags, setHashtags] = useState<string[]>([]);
+  const [imageUrl, setImageUrl] = useState('https://placehold.co/1080x1080.png');
   const [currentPostTime, setCurrentPostTime] = useState<Date | null>(null);
   
   const [isLoadingIdeas, setIsLoadingIdeas] = useState(false);
   const [isLoadingCaption, setIsLoadingCaption] = useState(false);
   const [isLoadingHashtags, setIsLoadingHashtags] = useState(false);
+  const [isLoadingImage, setIsLoadingImage] = useState(false);
   const [suggestedIdeas, setSuggestedIdeas] = useState<ContentIdea[]>([]);
 
   const { toast } = useToast();
@@ -86,17 +89,37 @@ export function PostCreator({ onPostApproved }: PostCreatorProps) {
     setIsLoadingHashtags(false);
   };
 
+  const handleGenerateImage = async () => {
+    const imagePrompt = keyInformation || topic;
+    if (!imagePrompt) {
+      toast({ title: 'Eksik Bilgi', description: 'Resim oluşturmak için lütfen bir konu veya anahtar bilgi sağlayın.', variant: 'destructive' });
+      return;
+    }
+    setIsLoadingImage(true);
+    setImageUrl('https://placehold.co/1080x1080.png?text=Resim+Oluşturuluyor...'); // Show loading placeholder
+    try {
+      const result = await generateImageAction({ prompt: imagePrompt });
+      setImageUrl(result.imageUrl);
+      toast({ title: 'Resim Oluşturuldu', description: 'Yapay zeka gönderiniz için bir resim hazırladı.' });
+    } catch (error) {
+      toast({ title: 'Resim Oluşturulurken Hata Oluştu', description: (error as Error).message, variant: 'destructive' });
+      setImageUrl('https://placehold.co/1080x1080.png?text=Hata+Oluştu'); // Show error placeholder
+    }
+    setIsLoadingImage(false);
+  };
+
   const resetForm = () => {
     setTopic('');
     setKeyInformation('');
     setCaption('');
     setHashtags([]);
+    setImageUrl('https://placehold.co/1080x1080.png');
     setCurrentPostTime(new Date());
   };
 
   const handleApprove = () => {
-    if (!caption || hashtags.length === 0) {
-      toast({ title: 'Eksik Gönderi', description: 'Lütfen onaylamadan önce başlık ve hashtag oluşturun.', variant: 'destructive' });
+    if (!caption || hashtags.length === 0 || imageUrl === 'https://placehold.co/1080x1080.png' || imageUrl.includes('?text=')) {
+      toast({ title: 'Eksik Gönderi', description: 'Lütfen onaylamadan önce başlık, hashtag ve geçerli bir resim oluşturun.', variant: 'destructive' });
       return;
     }
     const newPost: Post = {
@@ -105,7 +128,7 @@ export function PostCreator({ onPostApproved }: PostCreatorProps) {
       keyInformation,
       caption,
       hashtags,
-      imageUrl: 'https://placehold.co/1080x1080.png', // Default placeholder
+      imageUrl, 
       imageHint: topic.toLowerCase().split(" ").slice(0,2).join(" ") || "bilim teknoloji",
       simulatedPostTime: currentPostTime || new Date(),
       status: 'approved',
@@ -122,7 +145,7 @@ export function PostCreator({ onPostApproved }: PostCreatorProps) {
 
   const currentPreviewPost: Partial<Post> = {
     topic, keyInformation, caption, hashtags, 
-    imageUrl: 'https://placehold.co/1080x1080.png', 
+    imageUrl,
     imageHint: topic.toLowerCase().split(" ").slice(0,2).join(" ") || "bilim teknoloji",
     simulatedPostTime: currentPostTime,
   };
@@ -147,13 +170,13 @@ export function PostCreator({ onPostApproved }: PostCreatorProps) {
 
           <div className="space-y-2">
             <Label htmlFor="keyInformation">Anahtar Bilgiler / İstem</Label>
-            <Textarea id="keyInformation" placeholder="Yapay zeka için ana mesajı veya özel ayrıntıları kısaca açıklayın." value={keyInformation} onChange={(e) => setKeyInformation(e.target.value)} />
+            <Textarea id="keyInformation" placeholder="Yapay zeka için ana mesajı veya özel ayrıntıları kısaca açıklayın. Resim oluşturma istemi olarak da kullanılacaktır." value={keyInformation} onChange={(e) => setKeyInformation(e.target.value)} />
           </div>
           
           <Dialog>
             <DialogTrigger asChild>
               <Button variant="outline" className="w-full" onClick={handleSuggestIdeas} disabled={isLoadingIdeas}>
-                <Lightbulb className="mr-2 h-4 w-4" />
+                {isLoadingIdeas ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Lightbulb className="mr-2 h-4 w-4" />}
                 {isLoadingIdeas ? 'Fikirler Öneriliyor...' : 'İçerik Fikirleri Öner'}
               </Button>
             </DialogTrigger>
@@ -181,8 +204,13 @@ export function PostCreator({ onPostApproved }: PostCreatorProps) {
             </DialogContent>
           </Dialog>
 
+          <Button onClick={handleGenerateImage} disabled={isLoadingImage || (!topic && !keyInformation)} className="w-full">
+            {isLoadingImage ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ImageIcon className="mr-2 h-4 w-4" />}
+            {isLoadingImage ? 'Resim Oluşturuluyor...' : 'Yapay Zeka ile Resim Oluştur'}
+          </Button>
+
           <Button onClick={handleGenerateCaption} disabled={isLoadingCaption || !topic || !keyInformation} className="w-full">
-            <Sparkles className="mr-2 h-4 w-4" />
+            {isLoadingCaption ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
             {isLoadingCaption ? 'Başlık Oluşturuluyor...' : 'Yapay Zeka ile Başlık Oluştur'}
           </Button>
 
@@ -192,7 +220,7 @@ export function PostCreator({ onPostApproved }: PostCreatorProps) {
           </div>
           
           <Button onClick={handleOptimizeHashtags} disabled={isLoadingHashtags || !caption} variant="outline" className="w-full">
-            <Tag className="mr-2 h-4 w-4" />
+            {isLoadingHashtags ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Tag className="mr-2 h-4 w-4" />}
             {isLoadingHashtags ? 'Hashtag\'ler Optimize Ediliyor...' : 'Yapay Zeka ile Hashtag\'leri Optimize Et'}
           </Button>
 
@@ -223,7 +251,7 @@ export function PostCreator({ onPostApproved }: PostCreatorProps) {
       </Card>
       
       <div className="sticky top-20"> {/* Make preview sticky */}
-        <PostPreviewCard post={currentPreviewPost} />
+        <PostPreviewCard post={currentPreviewPost} isLoadingImage={isLoadingImage}/>
       </div>
     </div>
   );
