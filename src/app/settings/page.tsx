@@ -35,7 +35,8 @@ export default function SettingsPage() {
     if (storedRecipientEmail) {
       setRecipientEmail(storedRecipientEmail);
     } else {
-      setRecipientEmail('sirfpubg12@gmail.com'); // Varsayılan alıcı
+      // Varsayılan alıcı e-posta adresi
+      setRecipientEmail('sirfpubg12@gmail.com'); 
     }
     setIsLoading(false);
   }, []);
@@ -50,15 +51,17 @@ export default function SettingsPage() {
       return;
     }
     setIsLoading(true);
+    // Bu belirteç sadece tarayıcının yerel depolamasında saklanır. GÜVENLİ DEĞİLDİR.
     localStorage.setItem(INSTAGRAM_TOKEN_KEY, accessToken);
+    // Kullanıcı adını simüle et
     const simulatedUsername = `kullanici_test_${Math.random().toString(36).substring(2, 7)}`;
     localStorage.setItem(INSTAGRAM_USERNAME_KEY, simulatedUsername);
     setUsername(simulatedUsername);
     setIsConnected(true);
     setIsLoading(false);
-    setAccessToken('');
+    setAccessToken(''); // Giriş alanını temizle
     toast({
-      title: 'Belirteç Kaydedildi',
+      title: 'Belirteç Kaydedildi (YEREL OLARAK - GÜVENSİZ)',
       description: (
         <div>
           <p>{simulatedUsername} adına belirteciniz yerel olarak (tarayıcıda) saklandı.</p>
@@ -66,8 +69,8 @@ export default function SettingsPage() {
           <p className="text-xs">Sadece test ve geliştirme amaçlıdır. Bu belirteç, "Instagram'da Paylaş (GERÇEK API DENEMESİ)" butonu tarafından kullanılacaktır.</p>
         </div>
       ),
-      className: 'bg-yellow-600 text-white border-yellow-700',
-      duration: 10000,
+      className: 'bg-yellow-600 text-white border-yellow-700', // Daha dikkat çekici bir stil
+      duration: 10000, // Mesajın daha uzun süre kalması için
     });
   };
 
@@ -148,7 +151,7 @@ export default function SettingsPage() {
             {!isLoading && isConnected && username && (
               <div className="space-y-3 p-4 border border-green-500 rounded-md bg-green-500/10">
                 <p className="text-green-400 font-semibold">
-                  Instagram hesabına yerel belirteç ile bağlı: <span className="font-bold text-green-300">@{username}</span> (Bu sadece bir SİMÜLASYONDUR ve yerel belirteç kullanır)
+                  Instagram hesabına yerel belirteç ile bağlı: <span className="font-bold text-green-300">@{username}</span> (Bu sadece bir testtir ve yerel belirteç kullanır)
                 </p>
                 <p className="text-xs text-yellow-500">UYARI: Bu bağlantı sadece yerel depolama kullanır ve GÜVENLİ DEĞİLDİR.</p>
                 <Button variant="outline" onClick={handleDisconnectInstagram} disabled={isLoading} className="border-red-500 text-red-500 hover:bg-red-500/10">
@@ -183,7 +186,7 @@ export default function SettingsPage() {
                   className="bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 text-white hover:opacity-90 w-full"
                 >
                   {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Instagram className="mr-2 h-5 w-5" />}
-                  Erişim Belirtecini Kaydet ve Bağlan
+                  Erişim Belirtecini Kaydet ve Bağlan (Test Amaçlı)
                 </Button>
               </div>
             )}
@@ -229,10 +232,13 @@ export default function SettingsPage() {
                 <p className="font-semibold">Gerçek E-posta Gönderimi İçin Yapılması Gerekenler:</p>
                 <ol className="list-decimal list-inside text-xs pl-4 space-y-1.5">
                   <li>
-                    <strong>`.env.local` Dosyası Oluşturun:</strong> Projenizin **ana dizininde** (yani `package.json` dosyasının bulunduğu yerde) `.env.local` adında bir dosya oluşturun. Eğer zaten varsa, bu adımı atlayın.
+                    <strong>Nodemailer Kurulumu Kontrolü:</strong> Bu özellik için `nodemailer` kütüphanesi `package.json` dosyanıza eklenmişti. Eğer `node_modules` klasörünüzde bir sorun olduğunu düşünüyorsanız veya emin değilseniz, projenizin ana dizininde `npm install` (veya `yarn install`) komutunu tekrar çalıştırın.
                   </li>
                   <li>
-                    <strong>Ortam Değişkenlerini Ekleyin:</strong> `.env.local` dosyasının içine aşağıdaki satırları **tam olarak bu şekilde** ekleyin ve kendi bilgilerinizle değiştirin:
+                    <strong>`.env.local` Dosyası Oluşturun (veya Kontrol Edin):</strong> Projenizin **ana dizininde** (yani `package.json` dosyasının bulunduğu yerde) `.env.local` adında bir dosya oluşturun. Eğer zaten varsa, içeriğini kontrol edin.
+                  </li>
+                  <li>
+                    <strong>Ortam Değişkenlerini Ekleyin (veya Kontrol Edin):</strong> `.env.local` dosyasının içine aşağıdaki satırları **tam olarak bu şekilde** ekleyin ve kendi bilgilerinizle değiştirin:
                     <pre className="mt-1 p-2 bg-black/20 rounded text-xs whitespace-pre-wrap"><code>EMAIL_SENDER_ADDRESS=getdusbox@gmail.com{'\n'}EMAIL_APP_PASSWORD=qdti jdwa wxpd tkwl</code></pre>
                     (Yukarıdaki değerler, sizin sağladığınız örneklerdir. `EMAIL_APP_PASSWORD` kısmına kendi 16 haneli Google Uygulama Şifrenizi girin.)
                   </li>
@@ -244,9 +250,8 @@ export default function SettingsPage() {
                         <li>Google Hesap ayarlarınızdan bir "Uygulama Şifresi" oluşturmanız ve `.env.local` dosyasındaki `EMAIL_APP_PASSWORD` kısmına bu 16 haneli şifreyi girmeniz gerekir. Normal Gmail şifreniz burada çalışmayacaktır.</li>
                     </ul>
                   </li>
-                  <li><strong>Nodemailer Kurulumu:</strong> Bu özellik için `nodemailer` kütüphanesi `package.json` dosyanıza eklenmişti. Eğer `node_modules` klasörünüzde bir sorun olduğunu düşünüyorsanız, projenizin ana dizininde `npm install` (veya `yarn install`) komutunu tekrar çalıştırabilirsiniz.</li>
                   <li>
-                    <strong>Sunucuyu Yeniden Başlatın:</strong> `.env.local` dosyasını oluşturduktan veya değiştirdikten sonra, değişikliklerin Next.js tarafından algılanması için geliştirme sunucunuzu **durdurup yeniden başlatmanız ZORUNLUDUR**. (Örn: Terminalde Ctrl+C yapıp sonra tekrar `npm run dev` veya `yarn dev`).
+                    <strong>Sunucuyu Yeniden Başlatın (ÇOK ÖNEMLİ):</strong> `.env.local` dosyasını oluşturduktan veya değiştirdikten sonra, değişikliklerin Next.js tarafından algılanması için geliştirme sunucunuzu **durdurup yeniden başlatmanız ZORUNLUDUR**. (Örn: Terminalde Ctrl+C yapıp sonra tekrar `npm run dev` veya `yarn dev`).
                   </li>
                 </ol>
                 <p className="mt-2">Bu ayarlar doğru yapıldığında, uygulama belirttiğiniz alıcıya e-posta göndermeyi deneyecektir. Hata olması durumunda bildirim alacaksınız ve detaylar için tarayıcı konsolunu ve sunucu terminalindeki logları kontrol edebilirsiniz.</p>
