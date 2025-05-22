@@ -12,8 +12,9 @@ import { triggerAutoPostAndEmail } from '@/lib/actions';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const LOCAL_STORAGE_POSTS_KEY = 'cosmosCuratorPosts';
-const LOCAL_STORAGE_EMAIL_RECIPIENT_KEY = 'emailRecipient_cosmosCurator'; // Ayarlar sayfasındaki ile aynı olmalı
+const LOCAL_STORAGE_EMAIL_RECIPIENT_KEY = 'emailRecipient_cosmosCurator';
 const SESSION_STORAGE_AUTO_SENT_PREFIX = 'cosmosCuratorAutoSent_';
+const MAX_HISTORY_POSTS = 2;
 
 export default function HomePage() {
   const [approvedPosts, setApprovedPosts] = useState<Post[]>([]);
@@ -48,17 +49,43 @@ export default function HomePage() {
   }, []);
 
   const handlePostApproved = (newPost: Post) => {
-    const updatedPosts = [...approvedPosts, newPost];
-    setApprovedPosts(updatedPosts);
-    localStorage.setItem(LOCAL_STORAGE_POSTS_KEY, JSON.stringify(updatedPosts));
+    setApprovedPosts(prevPosts => {
+      const updatedPosts = [...prevPosts, newPost];
+      if (updatedPosts.length > MAX_HISTORY_POSTS) {
+        updatedPosts.shift(); // En eski gönderiyi kaldır
+      }
+      localStorage.setItem(LOCAL_STORAGE_POSTS_KEY, JSON.stringify(updatedPosts));
+      return updatedPosts;
+    });
   };
 
-  // Otomatik gönderi ve e-posta tetikleme mekanizması
+  const handleClearAllHistory = () => {
+    setApprovedPosts([]);
+    localStorage.removeItem(LOCAL_STORAGE_POSTS_KEY);
+    toast({
+      title: 'Geçmiş Temizlendi',
+      description: 'Tüm onaylanmış gönderiler geçmişten silindi.',
+    });
+  };
+
+  const handleDeleteSinglePost = (postId: string) => {
+    setApprovedPosts(prevPosts => {
+      const updatedPosts = prevPosts.filter(post => post.id !== postId);
+      localStorage.setItem(LOCAL_STORAGE_POSTS_KEY, JSON.stringify(updatedPosts));
+      return updatedPosts;
+    });
+    toast({
+      title: 'Gönderi Silindi',
+      description: 'Seçili gönderi geçmişten silindi.',
+      variant: 'destructive'
+    });
+  };
+
   useEffect(() => {
-    const TARGET_HOURS = [9, 12, 15, 18, 21]; // Hedef gönderi saatleri
+    const TARGET_HOURS = [9, 12, 15, 18, 21];
 
     const getSlotKey = (hour: number) => {
-      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD formatında gün
+      const today = new Date().toISOString().split('T')[0];
       return `${SESSION_STORAGE_AUTO_SENT_PREFIX}${today}_${hour}`;
     };
 
@@ -67,18 +94,16 @@ export default function HomePage() {
       const currentHour = now.getHours();
       const currentMinute = now.getMinutes();
 
-      // Sadece sabah 9 (dahil) ile akşam 23 (hariç) arasında çalışır
       if (currentHour < 9 || currentHour >= 23) {
         return;
       }
 
       for (const targetHour of TARGET_HOURS) {
-        // Hedef saatin başlangıcında (ilk dakikasında) tetikle
         if (currentHour === targetHour && currentMinute === 0) {
           const slotKey = getSlotKey(targetHour);
           if (!sessionStorage.getItem(slotKey)) {
             console.log(`Otomatik gönderi tetikleniyor: ${targetHour}:00`);
-            sessionStorage.setItem(slotKey, 'true'); // Bu oturum için bu saat dilimini işlendi olarak işaretle
+            sessionStorage.setItem(slotKey, 'true');
 
             const recipientEmail = localStorage.getItem(LOCAL_STORAGE_EMAIL_RECIPIENT_KEY);
             if (!recipientEmail) {
@@ -88,7 +113,7 @@ export default function HomePage() {
                 variant: 'destructive',
                 duration: 10000,
               });
-              return; // Alıcı e-posta yoksa devam etme
+              return;
             }
 
             toast({
@@ -113,21 +138,14 @@ export default function HomePage() {
                 duration: 10000,
               });
             }
-            // Bir saat dilimi işlendikten sonra döngüden çık, bir sonraki kontrolü bekle
-            // Bu, aynı anda birden fazla saat dilimi koşulu sağlanırsa (çok olası değil ama)
-            // sadece birini işlemesini sağlar.
             break;
           }
         }
       }
     };
 
-    // Her dakika başında kontrol et
     const intervalId = setInterval(checkAndTriggerAutoPost, 60000);
-
-    // İlk yüklendiğinde de bir kere kontrol et (sayfa açıldığında tam saat başı ise kaçırmamak için)
     checkAndTriggerAutoPost();
-
     return () => clearInterval(intervalId);
   }, [toast]);
 
@@ -163,7 +181,11 @@ export default function HomePage() {
       </Alert>
 
       <PostCreator onPostApproved={handlePostApproved} />
-      <PostHistory posts={approvedPosts} />
+      <PostHistory 
+        posts={approvedPosts} 
+        onClearAllHistory={handleClearAllHistory}
+        onDeleteSinglePost={handleDeleteSinglePost}
+      />
     </main>
   );
 }

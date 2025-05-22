@@ -2,24 +2,35 @@
 import type { Post } from '@/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Button } from '@/components/ui/button';
 import { PostPreviewCard } from './post-preview-card';
-import { History, ListChecks } from 'lucide-react';
+import { History, ListChecks, Trash2 } from 'lucide-react';
 
 interface PostHistoryProps {
   posts: Post[];
+  onClearAllHistory: () => void;
+  onDeleteSinglePost: (postId: string) => void;
 }
 
-export function PostHistory({ posts }: PostHistoryProps) {
+export function PostHistory({ posts, onClearAllHistory, onDeleteSinglePost }: PostHistoryProps) {
   return (
     <Card className="w-full shadow-lg mt-12">
-      <CardHeader>
-        <CardTitle className="text-2xl flex items-center gap-2">
-          <History className="h-7 w-7 text-primary" />
-          Gönderi Geçmişi
-        </CardTitle>
-        <CardDescription>
-          Onaylanmış ve simüle edilmiş tüm gönderilerinizin bir günlüğü.
-        </CardDescription>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div>
+          <CardTitle className="text-2xl flex items-center gap-2">
+            <History className="h-7 w-7 text-primary" />
+            Gönderi Geçmişi
+          </CardTitle>
+          <CardDescription>
+            Onaylanmış ve simüle edilmiş (en fazla 2) gönderinizin bir günlüğü.
+          </CardDescription>
+        </div>
+        {posts.length > 0 && (
+          <Button variant="destructive" onClick={onClearAllHistory} size="sm">
+            <Trash2 className="mr-2 h-4 w-4" />
+            Tüm Geçmişi Temizle
+          </Button>
+        )}
       </CardHeader>
       <CardContent>
         {posts.length === 0 ? (
@@ -29,14 +40,16 @@ export function PostHistory({ posts }: PostHistoryProps) {
             <p>Onaylanmış gönderiler burada görünecektir.</p>
           </div>
         ) : (
-          <ScrollArea className="h-[600px] w-full">
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 p-1">
-              {posts.slice().reverse().map((post) => ( // Show newest first
+          <ScrollArea className="h-auto max-h-[calc(2*450px+2rem)] w-full"> {/* Adjust height based on card size */}
+            <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 p-1"> {/* Max 2 columns for 2 posts */}
+              {posts.slice().reverse().map((post) => (
                 <PostPreviewCard 
                   key={post.id} 
                   post={post} 
                   title="Onaylanmış Gönderi" 
                   showShareButton={true} 
+                  showDeleteButton={true}
+                  onDeleteSinglePost={onDeleteSinglePost}
                 />
               ))}
             </div>

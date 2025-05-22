@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { CalendarDays, Hash, Image as ImageIcon, Loader2, Sparkles, Send } from 'lucide-react';
+import { CalendarDays, Hash, Image as ImageIcon, Loader2, Sparkles, Send, Trash2 } from 'lucide-react';
 import type { Post } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { sendPostByEmail } from '@/lib/actions';
@@ -18,9 +18,18 @@ interface PostPreviewCardProps {
   title?: string;
   isLoadingImage?: boolean;
   showShareButton?: boolean;
+  showDeleteButton?: boolean;
+  onDeleteSinglePost?: (postId: string) => void;
 }
 
-export function PostPreviewCard({ post, title = "Gönderi Önizlemesi", isLoadingImage = false, showShareButton = false }: PostPreviewCardProps) {
+export function PostPreviewCard({ 
+  post, 
+  title = "Gönderi Önizlemesi", 
+  isLoadingImage = false, 
+  showShareButton = false,
+  showDeleteButton = false,
+  onDeleteSinglePost 
+}: PostPreviewCardProps) {
   const { id, imageUrl, imageHint, caption, hashtags, simulatedPostTime } = post;
   const [clientFormattedTime, setClientFormattedTime] = useState<string | null>(null);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
@@ -74,7 +83,19 @@ export function PostPreviewCard({ post, title = "Gönderi Önizlemesi", isLoadin
 
     setIsSendingEmail(true);
     try {
-      const result = await sendPostByEmail(post as Post, recipientEmail);
+      // `post` nesnesinin Post tipine uygun olduğundan emin olalım
+      const fullPost: Post = {
+        id: post.id,
+        topic: post.topic!,
+        keyInformation: post.keyInformation!,
+        caption: post.caption!,
+        hashtags: post.hashtags!,
+        imageUrl: post.imageUrl!,
+        imageHint: post.imageHint,
+        simulatedPostTime: post.simulatedPostTime instanceof Date ? post.simulatedPostTime : new Date(post.simulatedPostTime!),
+        status: post.status || 'approved',
+      };
+      const result = await sendPostByEmail(fullPost, recipientEmail);
       if (result.success) {
         toast({
           title: 'E-posta Gönderildi',
@@ -86,7 +107,7 @@ export function PostPreviewCard({ post, title = "Gönderi Önizlemesi", isLoadin
           title: 'E-posta Gönderilemedi',
           description: result.message,
           variant: 'destructive',
-          duration: 10000, // Hata mesajları daha uzun süre kalsın
+          duration: 10000,
         });
       }
     } catch (error) {
@@ -98,6 +119,12 @@ export function PostPreviewCard({ post, title = "Gönderi Önizlemesi", isLoadin
       });
     }
     setIsSendingEmail(false);
+  };
+
+  const handleDeleteClick = () => {
+    if (id && onDeleteSinglePost) {
+      onDeleteSinglePost(id);
+    }
   };
 
 
@@ -164,18 +191,31 @@ export function PostPreviewCard({ post, title = "Gönderi Önizlemesi", isLoadin
                 Planlanan Tarih: {clientFormattedTime ? clientFormattedTime : 'Zaman yükleniyor...'}
             </div>
         )}
-        {showShareButton && caption && (
-            <Button 
-              onClick={handleSendEmail} 
-              disabled={isSendingEmail}
-              variant="outline"
+        <div className="w-full flex flex-col sm:flex-row gap-2">
+          {showShareButton && caption && (
+              <Button 
+                onClick={handleSendEmail} 
+                disabled={isSendingEmail}
+                variant="outline"
+                size="sm"
+                className="flex-1" // Butonların eşit yer kaplaması için
+              >
+                {isSendingEmail ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+                İçeriği E-posta İle Gönder
+              </Button>
+          )}
+          {showDeleteButton && id && onDeleteSinglePost && (
+            <Button
+              variant="destructive"
               size="sm"
-              className="w-full"
+              onClick={handleDeleteClick}
+              className="flex-1" // Butonların eşit yer kaplaması için
             >
-              {isSendingEmail ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
-              İçeriği E-posta İle Gönder
+              <Trash2 className="mr-2 h-4 w-4" />
+              Bu Gönderiyi Sil
             </Button>
-        )}
+          )}
+        </div>
       </CardFooter>
     </Card>
   );
