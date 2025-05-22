@@ -14,8 +14,8 @@ interface PostHistoryProps {
 
 export function PostHistory({ posts, onClearAllHistory, onDeleteSinglePost }: PostHistoryProps) {
   return (
-    <Card className="w-full shadow-lg mt-12 flex flex-col max-h-[80vh]"> {/* max-h eklendi, gerekirse ayarlanabilir */}
-      <CardHeader className="flex flex-row items-center justify-between flex-shrink-0">
+    <Card className="w-full shadow-lg mt-12 flex flex-col max-h-[80vh]"> {/* Dikeyde esnek ve maksimum yükseklik */}
+      <CardHeader className="flex flex-row items-center justify-between flex-shrink-0"> {/* Header küçülmesin */}
         <div>
           <CardTitle className="text-2xl flex items-center gap-2">
             <History className="h-7 w-7 text-primary" />
@@ -32,17 +32,16 @@ export function PostHistory({ posts, onClearAllHistory, onDeleteSinglePost }: Po
           </Button>
         )}
       </CardHeader>
-      <CardContent className="p-0 flex-1 min-h-0"> {/* Değişiklik: flex-1 min-h-0 */}
+      <CardContent className="p-0 flex-1 min-h-0"> {/* Kalan alanı doldur, ScrollArea için temel */}
         {posts.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-10 text-center text-muted-foreground px-6 h-full"> {/* h-full eklendi */}
+          <div className="flex flex-col items-center justify-center py-10 text-center text-muted-foreground px-6 h-full">
             <ListChecks className="h-16 w-16 mb-4" />
             <p className="text-lg font-medium">Geçmişte henüz gönderi yok.</p>
             <p>Onaylanmış gönderiler burada görünecektir.</p>
           </div>
         ) : (
-          <ScrollArea className="h-full w-full">
-            {/* Kartları dikey olarak sıralamak ve ortalamak için flex kullanıldı */}
-            <div className="flex flex-col items-center gap-6 p-4">
+          <ScrollArea className="h-full w-full"> {/* Ebeveyninin (CardContent) tamamını kapla */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4"> {/* Kartları yan yana sırala */}
               {posts.slice().reverse().map((post) => (
                 <PostPreviewCard
                   key={post.id}
@@ -51,8 +50,6 @@ export function PostHistory({ posts, onClearAllHistory, onDeleteSinglePost }: Po
                   showShareButton={true}
                   showDeleteButton={true}
                   onDeleteSinglePost={onDeleteSinglePost}
-                  // Kartın kendini ortalaması için ek bir stil, max-w-md ile birlikte çalışmalı
-                  className="self-center" 
                 />
               ))}
             </div>
