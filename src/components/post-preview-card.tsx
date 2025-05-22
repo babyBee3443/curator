@@ -83,7 +83,6 @@ export function PostPreviewCard({
 
     setIsSendingEmail(true);
     try {
-      // `post` nesnesinin Post tipine uygun olduğundan emin olalım
       const fullPost: Post = {
         id: post.id,
         topic: post.topic!,
@@ -126,7 +125,6 @@ export function PostPreviewCard({
       onDeleteSinglePost(id);
     }
   };
-
 
   return (
     <Card className="w-full max-w-md shadow-xl flex flex-col">
@@ -198,7 +196,7 @@ export function PostPreviewCard({
                 disabled={isSendingEmail}
                 variant="outline"
                 size="sm"
-                className="flex-1" // Butonların eşit yer kaplaması için
+                className="flex-1"
               >
                 {isSendingEmail ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
                 İçeriği E-posta İle Gönder
@@ -209,7 +207,7 @@ export function PostPreviewCard({
               variant="destructive"
               size="sm"
               onClick={handleDeleteClick}
-              className="flex-1" // Butonların eşit yer kaplaması için
+              className="flex-1"
             >
               <Trash2 className="mr-2 h-4 w-4" />
               Bu Gönderiyi Sil

@@ -40,8 +40,8 @@ export function PostHistory({ posts, onClearAllHistory, onDeleteSinglePost }: Po
             <p>Onaylanmış gönderiler burada görünecektir.</p>
           </div>
         ) : (
-          <ScrollArea className="h-auto max-h-[calc(2*450px+2rem)] w-full"> {/* Adjust height based on card size */}
-            <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 p-1"> {/* Max 2 columns for 2 posts */}
+          <ScrollArea className="w-full max-h-[70vh]"> {/* Daha cömert bir maksimum yükseklik */}
+            <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 p-1">
               {posts.slice().reverse().map((post) => (
                 <PostPreviewCard 
                   key={post.id} 
