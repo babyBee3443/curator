@@ -1,23 +1,18 @@
 
 'use server';
 
-import type { Post } from '@/types';
+import type { Post, FullPostGenerationOutput } from '@/types';
 import nodemailer from 'nodemailer';
+import { suggestSingleContentIdea as suggestSingleContentIdeaFlow } from '@/ai/flows/suggest-content-ideas';
+import { generatePostCaption as generatePostCaptionFlow } from '@/ai/flows/generate-post-captions';
+import { optimizePostHashtags as optimizePostHashtagsFlow } from '@/ai/flows/optimize-post-hashtags';
+import { generatePostImage as generatePostImageFlow } from '@/ai/flows/generate-post-image';
 
-// Ortam değişkenlerinin Next.js tarafından doğru şekilde yüklenip yüklenmediğini anlamak için loglar.
 // Bu loglar, dosya her yüklendiğinde (sunucu başladığında veya dosya değiştiğinde) çalışır.
 console.log('[ACTIONS.TS] MODÜL YÜKLENDİ - Ortam Değişkenleri Kontrolü (Modül Yüklenirken):');
 console.log(`[ACTIONS.TS] > process.env.EMAIL_USER: "${process.env.EMAIL_USER ? process.env.EMAIL_USER.substring(0,3) + '...' : 'BULUNAMADI'}"`);
 console.log(`[ACTIONS.TS] > process.env.EMAIL_APP_PASSWORD: "${process.env.EMAIL_APP_PASSWORD ? 'DEĞER MEVCUT (gizli)' : 'BULUNAMADI'}"`);
 
-
-export interface FullPostGenerationOutput {
-  topic: string;
-  keyInformation: string;
-  caption: string;
-  hashtags: string[];
-  imageUrl: string;
-}
 
 export async function generateFullPostAction(): Promise<FullPostGenerationOutput> {
   console.log('[ACTIONS.TS] generateFullPostAction başlatıldı.');
@@ -29,20 +24,20 @@ export async function generateFullPostAction(): Promise<FullPostGenerationOutput
       throw new Error('Yapay zeka geçerli bir içerik fikri üretemedi.');
     }
 
-    const imagePrompt = idea.topic; // Sadece kısa konu başlığını kullan
+    const imagePrompt = idea.topic;
 
     const [imageResult, captionResult] = await Promise.all([
       generatePostImageFlow({ prompt: imagePrompt }),
       generatePostCaptionFlow({ topic: idea.topic, keyInformation: idea.keyInformation })
     ]);
-    console.log('[ACTIONS.TS] Resim sonucu:', imageResult);
-    console.log('[ACTIONS.TS] Başlık sonucu:', captionResult);
+    console.log('[ACTIONS.TS] Resim sonucu:', imageResult ? imageResult.imageUrl.substring(0,30) + '...' : 'Resim Yok');
+    console.log('[ACTIONS.TS] Başlık sonucu:', captionResult ? captionResult.caption.substring(0,30) + '...' : 'Başlık Yok');
 
-    if (!imageResult.imageUrl) {
+    if (!imageResult || !imageResult.imageUrl) {
       console.error('[ACTIONS.TS] Resim üretilemedi.');
       throw new Error('Yapay zeka bir resim üretemedi.');
     }
-    if (!captionResult.caption) {
+    if (!captionResult || !captionResult.caption) {
       console.error('[ACTIONS.TS] Başlık üretilemedi.');
       throw new Error('Yapay zeka bir başlık üretemedi.');
     }
@@ -128,20 +123,45 @@ export async function sendPostByEmail(
 
   const emailSubject = `Kozmos Küratörü Yeni Gönderi Fikri: ${post.topic}`;
   const emailHtml = `
-    <h1>Kozmos Küratörü Yeni Gönderi Fikri</h1>
-    <p>Merhaba,</p>
-    <p>Yapay zeka sizin için aşağıdaki gönderi içeriğini oluşturdu:</p>
-    <hr>
-    <h2>Konu: ${post.topic || 'Belirtilmemiş'}</h2>
-    ${imageUrlDisplayHtml}
-    ${imageTagHtml}
-    <h3>Başlık:</h3>
-    <div style="background-color: #f0f0f0; padding: 10px; border-radius: 5px; white-space: pre-line;">${post.caption || 'Başlık oluşturulmadı.'}</div>
-    <h3>Hashtag'ler:</h3>
-    <p>${post.hashtags && post.hashtags.length > 0 ? post.hashtags.map(tag => `#${tag}`).join(' ') : 'Hashtag bulunmuyor.'}</p>
-    <hr>
-    <p>Bu içeriği Instagram'da paylaşabilirsiniz.</p>
-    <p>İyi çalışmalar!</p>
+    <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          h1 { color: #2c3e50; }
+          h2 { color: #34495e; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+          h3 { color: #7f8c8d; }
+          .content-block { background-color: #f9f9f9; padding: 15px; border-radius: 5px; margin-bottom: 15px; border: 1px solid #eee; }
+          .caption { white-space: pre-line; font-size: 1.1em; }
+          .hashtags { color: #3498db; }
+          img { max-width: 100%; height: auto; border: 1px solid #ddd; border-radius: 4px; padding: 5px; margin-top:10px; }
+          a { color: #3498db; text-decoration: none; }
+          a:hover { text-decoration: underline; }
+          hr { border: 0; border-top: 1px solid #eee; margin: 20px 0; }
+          .footer { font-size: 0.9em; color: #777; margin-top: 20px; }
+        </style>
+      </head>
+      <body>
+        <h1>Kozmos Küratörü Otomatik Gönderi</h1>
+        <p>Merhaba,</p>
+        <p>Yapay zeka sizin için aşağıdaki gönderi içeriğini otomatik olarak oluşturdu:</p>
+        <hr>
+        <div class="content-block">
+          <h2>Konu: ${post.topic || 'Belirtilmemiş'}</h2>
+          ${imageUrlDisplayHtml}
+          ${imageTagHtml}
+        </div>
+        <div class="content-block">
+          <h3>Başlık:</h3>
+          <div class="caption">${post.caption || 'Başlık oluşturulmadı.'}</div>
+        </div>
+        <div class="content-block">
+          <h3>Hashtag'ler:</h3>
+          <p class="hashtags">${post.hashtags && post.hashtags.length > 0 ? post.hashtags.map(tag => `#${tag}`).join(' ') : 'Hashtag bulunmuyor.'}</p>
+        </div>
+        <hr>
+        <p class="footer">Bu e-posta, Kozmos Küratörü uygulaması tarafından otomatik olarak gönderilmiştir.</p>
+      </body>
+    </html>
   `;
 
   const mailOptions: nodemailer.SendMailOptions = {
@@ -174,128 +194,43 @@ export async function sendPostByEmail(
   }
 }
 
-
-import { suggestSingleContentIdea as suggestSingleContentIdeaFlow } from '@/ai/flows/suggest-content-ideas';
-import { generatePostCaption as generatePostCaptionFlow } from '@/ai/flows/generate-post-captions';
-import { optimizePostHashtags as optimizePostHashtagsFlow } from '@/ai/flows/optimize-post-hashtags';
-import { generatePostImage as generatePostImageFlow } from '@/ai/flows/generate-post-image';
-
-// Instagram API ile ilgili fonksiyonlar
-export async function getInstagramConnectionStatusAction(): Promise<{isConnected: boolean; username?: string}> {
-  console.log('[ACTIONS.TS] getInstagramConnectionStatusAction çağrıldı.');
-  const token = typeof window !== 'undefined' ? localStorage.getItem('instagramAccessToken_cosmosCurator') : null;
-  if (token) {
-    // Basit bir kullanıcı adı simülasyonu, gerçek API'de bu /me çağrısı ile alınır.
-    const username = localStorage.getItem('instagramUsername_cosmosCurator') || 'KullaniciAdi (Simüle)';
-    return {isConnected: true, username: username};
+export async function triggerAutoPostAndEmail(recipientEmail: string): Promise<void> {
+  console.log('[ACTIONS.TS] triggerAutoPostAndEmail çağrıldı. Alıcı:', recipientEmail);
+  if (!recipientEmail || !recipientEmail.includes('@')) {
+    console.error('[ACTIONS.TS] Otomatik gönderi için geçersiz veya eksik alıcı e-posta adresi:', recipientEmail);
+    throw new Error('Otomatik gönderi için Ayarlar sayfasında geçerli bir alıcı e-posta adresi tanımlanmamış.');
   }
-  return {isConnected: false};
-}
-
-export async function connectToInstagramAction(accessToken: string): Promise<{success: boolean; message: string; username?: string}> {
-  console.log('[ACTIONS.TS] connectToInstagramAction çağrıldı. Belirteç (ilk 15 krk):', accessToken ? accessToken.substring(0,15) : "YOK");
-  if (typeof window !== 'undefined') {
-    // GERÇEK KULLANIM İÇİN GÜVENLİ DEĞİLDİR! SADECE TEST AMAÇLIDIR.
-    localStorage.setItem('instagramAccessToken_cosmosCurator', accessToken);
-    // Kullanıcı adını da basitçe saklayalım (normalde API'den alınır)
-    // Bu kısım gerçek API çağrısı ile /me üzerinden alınmalı. Şimdilik manuel.
-    localStorage.setItem('instagramUsername_cosmosCurator', 'KullaniciAdi (Belirteç Kaydedildi)');
-  }
-  return {success: true, message: 'Instagram erişim belirteci kaydedildi (Simülasyon - Güvensiz Yöntem!). Lütfen sayfayı yenileyin.', username: 'KullaniciAdi (Belirteç Kaydedildi)'};
-}
-
-export async function disconnectFromInstagramAction(): Promise<{success: boolean; message: string}> {
-  console.log('[ACTIONS.TS] disconnectFromInstagramAction çağrıldı.');
-  if (typeof window !== 'undefined') {
-    localStorage.removeItem('instagramAccessToken_cosmosCurator');
-    localStorage.removeItem('instagramUsername_cosmosCurator');
-  }
-  return {success: true, message: 'Instagram bağlantısı kesildi (Simülasyon). Lütfen sayfayı yenileyin.'};
-}
-
-export async function sharePostToInstagramAction(post: Post, accessToken?: string): Promise<{success: boolean; message: string}> {
-  console.log(`[sharePostToInstagramAction] FONKSIYON ÇAĞRILDI. Konu: ${post.topic}`);
-
-  if (!accessToken) {
-    const errorMessage = 'Instagram\'a paylaşım yapılamadı: Erişim belirteci bulunamadı. Lütfen Ayarlar sayfasından Instagram hesabınızı bağlayın (belirtecinizi girin).';
-    console.error('[sharePostToInstagramAction] HATA:', errorMessage);
-    return { success: false, message: errorMessage };
-  }
-
-  const isDataUrlImage = post.imageUrl.startsWith('data:image');
-  if (isDataUrlImage) {
-      const errorMessage = 'Instagram Paylaşım Hatası: Resim URL\'si bir veri URI\'si. Instagram API, "image_url" için herkese açık bir HTTPS URL\'si bekler. Lütfen resmi herkese açık bir URL\'ye yükleyip o URL ile gönderi oluşturmayı deneyin veya Ayarlar sayfasındaki yönlendirmeleri takip edin.';
-      console.error(`[sharePostToInstagramAction] HATA: ${errorMessage}`);
-      return { success: false, message: errorMessage };
-  }
-
-
-  console.log(`[sharePostToInstagramAction] Belirteç ile GERÇEK API çağrısı denenecek: ${accessToken.substring(0,15)}...`);
-  console.log(`[sharePostToInstagramAction] Gönderi Detayları:`);
-  console.log(`[sharePostToInstagramAction] > Resim URL: ${post.imageUrl}`);
-  console.log(`[sharePostToInstagramAction] > Başlık: ${post.caption}`);
-  console.log(`[sharePostToInstagramAction] > Hashtag'ler: ${post.hashtags.join(', ')}`);
 
   try {
-    const instagramUserId = "me"; // User Access Token ile "me" kullanılabilir.
-    const apiVersion = "v19.0"; // Güncel API versiyonunu kullanın
+    // generateFullPostAction'dan dönen tip FullPostGenerationOutput
+    const fullPostOutput: FullPostGenerationOutput = await generateFullPostAction();
+    console.log('[ACTIONS.TS] Otomatik gönderi için içerik üretildi:', fullPostOutput.topic);
 
-    // Adım 1: Medya Konteyneri Oluşturma
-    const mediaContainerUrl = `https://graph.facebook.com/${apiVersion}/${instagramUserId}/media`;
-    const mediaContainerParams = new URLSearchParams();
-    mediaContainerParams.append('image_url', post.imageUrl);
-    mediaContainerParams.append('caption', `${post.caption}\n\n#${post.hashtags.join(' #')}`);
-    mediaContainerParams.append('access_token', accessToken);
+    // sendPostByEmail fonksiyonu Post tipinde bir nesne bekliyor.
+    // FullPostGenerationOutput'u Post tipine dönüştürelim.
+    const postForEmail: Post = {
+      id: `auto-post-${Date.now()}-${Math.random().toString(36).substring(2,9)}`, // Benzersiz ID
+      topic: fullPostOutput.topic,
+      keyInformation: fullPostOutput.keyInformation, // Bu bilgi e-postada doğrudan kullanılmıyor ama Post tipine uygunluk için
+      caption: fullPostOutput.caption,
+      hashtags: fullPostOutput.hashtags,
+      imageUrl: fullPostOutput.imageUrl,
+      imageHint: fullPostOutput.topic.toLowerCase().split(" ").slice(0,2).join(" ") || "bilim teknoloji",
+      simulatedPostTime: new Date(), // Oluşturulma zamanı
+      status: 'approved', // Otomatik e-posta için 'onaylanmış' kabul edilebilir
+    };
 
-    console.log(`[sharePostToInstagramAction] Medya konteyneri oluşturuluyor... URL: ${mediaContainerUrl}`);
-    console.log(`[sharePostToInstagramAction] Parametreler: image_url=${post.imageUrl}, caption=${post.caption.substring(0,30)}...`);
-
-
-    const mediaResponse = await fetch(mediaContainerUrl, {
-      method: 'POST',
-      body: mediaContainerParams,
-    });
-
-    const mediaResult = await mediaResponse.json();
-
-    if (!mediaResponse.ok || !mediaResult.id) {
-      console.error('[sharePostToInstagramAction] HATA (Medya Konteyneri):', JSON.stringify(mediaResult, null, 2));
-      const apiErrorMessage = mediaResult.error?.message || `HTTP ${mediaResponse.status} - ${mediaResponse.statusText}`;
-      const userMessage = `Instagram Medya Konteyneri Hatası: ${apiErrorMessage}. Resim URL'sinin herkese açık ve geçerli olduğundan, belirtecinizin 'instagram_content_publish' iznine sahip olduğundan emin olun. Detaylar için sunucu ve tarayıcı konsol loglarını kontrol edin.`;
-      return { success: false, message: userMessage };
+    const emailResult = await sendPostByEmail(postForEmail, recipientEmail);
+    if (!emailResult.success) {
+      console.error('[ACTIONS.TS] Otomatik e-posta gönderilemedi:', emailResult.message);
+      throw new Error(`Otomatik e-posta gönderilemedi: ${emailResult.message}`);
     }
-
-    const mediaContainerId = mediaResult.id;
-    console.log(`[sharePostToInstagramAction] Medya konteyneri oluşturuldu. ID: ${mediaContainerId}`);
-
-    // Adım 2: Medya Konteynerini Yayınlama
-    const publishUrl = `https://graph.facebook.com/${apiVersion}/${instagramUserId}/media_publish`;
-    const publishParams = new URLSearchParams();
-    publishParams.append('creation_id', mediaContainerId);
-    publishParams.append('access_token', accessToken);
-
-    console.log(`[sharePostToInstagramAction] Medya yayınlanıyor... URL: ${publishUrl}`);
-
-    const publishResponse = await fetch(publishUrl, {
-      method: 'POST',
-      body: publishParams,
-    });
-
-    const publishResult = await publishResponse.json();
-
-    if (!publishResponse.ok || !publishResult.id) {
-      console.error('[sharePostToInstagramAction] HATA (Yayınlama):', JSON.stringify(publishResult, null, 2));
-      const apiErrorMessage = publishResult.error?.message || `HTTP ${publishResponse.status} - ${publishResponse.statusText}`;
-      const userMessage = `Instagram Yayınlama Hatası: ${apiErrorMessage}. Detaylar için sunucu ve tarayıcı konsol loglarını kontrol edin.`;
-      return { success: false, message: userMessage };
-    }
-
-    console.log(`[sharePostToInstagramAction] Gönderi başarıyla Instagram'da yayınlandı! ID: ${publishResult.id}`);
-    return { success: true, message: `Gönderi başarıyla Instagram'da yayınlandı! Yayın ID: ${publishResult.id}. Lütfen Instagram hesabınızı kontrol edin.` };
-
+    console.log('[ACTIONS.TS] Otomatik gönderi başarıyla e-postalandı.');
   } catch (error) {
-    console.error('[sharePostToInstagramAction] KRİTİK HATA (Fetch veya diğer JS hatası):', error);
-    const errorMessage = error instanceof Error ? error.message : 'Bilinmeyen bir hata oluştu.';
-    return { success: false, message: `Instagram'a gönderi paylaşılırken kritik bir hata oluştu: ${errorMessage}. Detaylar için sunucu ve tarayıcı konsol loglarını kontrol edin.` };
+    console.error('[ACTIONS.TS] triggerAutoPostAndEmail sırasında hata:', error);
+    if (error instanceof Error) {
+      throw new Error(`Otomatik gönderi işlemi sırasında hata: ${error.message}`);
+    }
+    throw new Error('Otomatik gönderi işlemi sırasında bilinmeyen bir hata oluştu.');
   }
 }

@@ -11,11 +11,10 @@ export interface Post {
   status: 'pending' | 'approved' | 'rejected';
 }
 
-// ContentIdea arayüzü artık doğrudan PostCreator'da kullanılmayabilir,
-// çünkü AI tek bir yapılandırılmış fikir döndürecek ve bu doğrudan state'lere atanacak.
-// Eğer başka bir yerde kullanılmıyorsa kaldırılabilir. Şimdilik tutuyorum.
-export interface ContentIdea {
-  id: string; // Bu ID artık gereksiz olabilir eğer tek fikir üretiyorsak
+export interface FullPostGenerationOutput {
   topic: string;
   keyInformation: string;
+  caption: string;
+  hashtags: string[];
+  imageUrl: string;
 }
