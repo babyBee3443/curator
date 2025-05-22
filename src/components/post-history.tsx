@@ -50,6 +50,7 @@ export function PostHistory({ posts, onClearAllHistory, onDeleteSinglePost }: Po
                   showShareButton={true}
                   showDeleteButton={true}
                   onDeleteSinglePost={onDeleteSinglePost}
+                  className="self-center" // Kartları kendi grid hücrelerinde ortalar
                 />
               ))}
             </div>
