@@ -129,7 +129,7 @@ export function PostPreviewCard({
 
   return (
     <Card className="w-full max-w-md shadow-xl flex flex-col">
-      <CardHeader>
+      <CardHeader className="flex-shrink-0">
         <CardTitle className="flex items-center gap-2 text-xl">
           <ImageIcon className="h-6 w-6 text-accent" />
           {title}
@@ -183,7 +183,7 @@ export function PostPreviewCard({
           </div>
         )}
       </CardContent>
-      <CardFooter className="text-xs text-muted-foreground flex flex-col items-start gap-3 pt-4">
+      <CardFooter className="text-xs text-muted-foreground flex flex-col items-start gap-3 pt-4 flex-shrink-0"> {/* Değişiklik: flex-shrink-0 */}
         {simulatedPostTime && (
             <div className="flex items-center gap-1">
                 <CalendarDays className="h-4 w-4" />

@@ -14,8 +14,8 @@ interface PostHistoryProps {
 
 export function PostHistory({ posts, onClearAllHistory, onDeleteSinglePost }: PostHistoryProps) {
   return (
-    <Card className="w-full shadow-lg mt-12">
-      <CardHeader className="flex flex-row items-center justify-between">
+    <Card className="w-full shadow-lg mt-12 flex flex-col max-h-[80vh]"> {/* max-h eklendi, gerekirse ayarlanabilir */}
+      <CardHeader className="flex flex-row items-center justify-between flex-shrink-0">
         <div>
           <CardTitle className="text-2xl flex items-center gap-2">
             <History className="h-7 w-7 text-primary" />
@@ -32,24 +32,24 @@ export function PostHistory({ posts, onClearAllHistory, onDeleteSinglePost }: Po
           </Button>
         )}
       </CardHeader>
-      <CardContent className="p-0"> {/* Padding'i buradan kaldırıp ScrollArea içindeki dive taşıyoruz */}
+      <CardContent className="p-0 flex-1 min-h-0"> {/* Değişiklik: flex-1 min-h-0 */}
         {posts.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-10 text-center text-muted-foreground px-6"> {/* Boş durum için padding burada */}
+          <div className="flex flex-col items-center justify-center py-10 text-center text-muted-foreground px-6 h-full"> {/* h-full eklendi */}
             <ListChecks className="h-16 w-16 mb-4" />
             <p className="text-lg font-medium">Geçmişte henüz gönderi yok.</p>
             <p>Onaylanmış gönderiler burada görünecektir.</p>
           </div>
         ) : (
-          <ScrollArea className="w-full max-h-[70vh]"> {/* Yüksekliği cömert tutuyoruz */}
-            <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 p-4"> {/* Asıl içerik için padding burada */}
+          <ScrollArea className="h-full w-full"> {/* Değişiklik: h-full */}
+            <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 p-4">
               {posts.slice().reverse().map((post) => (
                 <PostPreviewCard
                   key={post.id}
                   post={post}
                   title="Onaylanmış Gönderi"
-                  showShareButton={true} // E-posta butonu için
-                  showDeleteButton={true} // Silme butonu için
-                  onDeleteSinglePost={onDeleteSinglePost} // Silme fonksiyonunu iletiyoruz
+                  showShareButton={true}
+                  showDeleteButton={true}
+                  onDeleteSinglePost={onDeleteSinglePost}
                 />
               ))}
             </div>
