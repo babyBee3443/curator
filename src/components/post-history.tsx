@@ -41,7 +41,8 @@ export function PostHistory({ posts, onClearAllHistory, onDeleteSinglePost }: Po
           </div>
         ) : (
           <ScrollArea className="h-full w-full"> {/* Değişiklik: h-full */}
-            <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 p-4">
+            {/* Kartları tek sütunda ve ortalanmış göstermek için grid ayarları güncellendi */}
+            <div className="grid grid-cols-1 gap-6 p-4 place-items-center">
               {posts.slice().reverse().map((post) => (
                 <PostPreviewCard
                   key={post.id}
