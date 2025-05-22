@@ -29,7 +29,7 @@ export default function RootLayout({
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}>
         <div className="flex min-h-screen w-full flex-col">
           <AppHeader />
-          <div className="flex-1"> {/* This div will allow children to define their own main structure and padding */}
+          <div className="flex-1 overflow-y-auto"> {/* Ana içerik alanı kaydırılabilir yapıldı */}
             {children}
           </div>
           <footer className="py-6 md:px-8 md:py-0 border-t">
