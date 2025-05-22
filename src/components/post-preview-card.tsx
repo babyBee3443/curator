@@ -22,13 +22,13 @@ interface PostPreviewCardProps {
   onDeleteSinglePost?: (postId: string) => void;
 }
 
-export function PostPreviewCard({ 
-  post, 
-  title = "Gönderi Önizlemesi", 
-  isLoadingImage = false, 
+export function PostPreviewCard({
+  post,
+  title = "Gönderi Önizlemesi",
+  isLoadingImage = false,
   showShareButton = false,
   showDeleteButton = false,
-  onDeleteSinglePost 
+  onDeleteSinglePost
 }: PostPreviewCardProps) {
   const { id, imageUrl, imageHint, caption, hashtags, simulatedPostTime } = post;
   const [clientFormattedTime, setClientFormattedTime] = useState<string | null>(null);
@@ -77,6 +77,7 @@ export function PostPreviewCard({
         title: 'Alıcı E-posta Eksik',
         description: 'Lütfen Ayarlar sayfasından bir alıcı e-posta adresi kaydedin.',
         variant: 'destructive',
+        duration: 7000,
       });
       return;
     }
@@ -191,8 +192,8 @@ export function PostPreviewCard({
         )}
         <div className="w-full flex flex-col sm:flex-row gap-2">
           {showShareButton && caption && (
-              <Button 
-                onClick={handleSendEmail} 
+              <Button
+                onClick={handleSendEmail}
                 disabled={isSendingEmail}
                 variant="outline"
                 size="sm"

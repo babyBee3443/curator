@@ -32,24 +32,24 @@ export function PostHistory({ posts, onClearAllHistory, onDeleteSinglePost }: Po
           </Button>
         )}
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-0"> {/* Padding'i buradan kaldırıp ScrollArea içindeki dive taşıyoruz */}
         {posts.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-10 text-center text-muted-foreground">
+          <div className="flex flex-col items-center justify-center py-10 text-center text-muted-foreground px-6"> {/* Boş durum için padding burada */}
             <ListChecks className="h-16 w-16 mb-4" />
             <p className="text-lg font-medium">Geçmişte henüz gönderi yok.</p>
             <p>Onaylanmış gönderiler burada görünecektir.</p>
           </div>
         ) : (
-          <ScrollArea className="w-full max-h-[70vh]"> {/* Daha cömert bir maksimum yükseklik */}
-            <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 p-1">
+          <ScrollArea className="w-full max-h-[70vh]"> {/* Yüksekliği cömert tutuyoruz */}
+            <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 p-4"> {/* Asıl içerik için padding burada */}
               {posts.slice().reverse().map((post) => (
-                <PostPreviewCard 
-                  key={post.id} 
-                  post={post} 
-                  title="Onaylanmış Gönderi" 
-                  showShareButton={true} 
-                  showDeleteButton={true}
-                  onDeleteSinglePost={onDeleteSinglePost}
+                <PostPreviewCard
+                  key={post.id}
+                  post={post}
+                  title="Onaylanmış Gönderi"
+                  showShareButton={true} // E-posta butonu için
+                  showDeleteButton={true} // Silme butonu için
+                  onDeleteSinglePost={onDeleteSinglePost} // Silme fonksiyonunu iletiyoruz
                 />
               ))}
             </div>
