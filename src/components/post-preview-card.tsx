@@ -10,6 +10,7 @@ import { CalendarDays, Hash, Image as ImageIcon, Loader2, Sparkles, Send, Trash2
 import type { Post } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { sendPostByEmail } from '@/lib/actions';
+import { cn } from '@/lib/utils';
 
 const EMAIL_RECIPIENT_KEY = 'emailRecipient_cosmosCurator';
 
@@ -20,6 +21,7 @@ interface PostPreviewCardProps {
   showShareButton?: boolean;
   showDeleteButton?: boolean;
   onDeleteSinglePost?: (postId: string) => void;
+  className?: string; // className prop'u eklendi
 }
 
 export function PostPreviewCard({
@@ -28,7 +30,8 @@ export function PostPreviewCard({
   isLoadingImage = false,
   showShareButton = false,
   showDeleteButton = false,
-  onDeleteSinglePost
+  onDeleteSinglePost,
+  className // className prop'u alındı
 }: PostPreviewCardProps) {
   const { id, imageUrl, imageHint, caption, hashtags, simulatedPostTime } = post;
   const [clientFormattedTime, setClientFormattedTime] = useState<string | null>(null);
@@ -128,7 +131,7 @@ export function PostPreviewCard({
   };
 
   return (
-    <Card className="w-full max-w-md shadow-xl flex flex-col">
+    <Card className={cn("w-full max-w-md shadow-xl flex flex-col", className)}> {/* className prop'u Card'a eklendi */}
       <CardHeader className="flex-shrink-0">
         <CardTitle className="flex items-center gap-2 text-xl">
           <ImageIcon className="h-6 w-6 text-accent" />

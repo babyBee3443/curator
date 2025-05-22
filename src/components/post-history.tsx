@@ -40,9 +40,9 @@ export function PostHistory({ posts, onClearAllHistory, onDeleteSinglePost }: Po
             <p>Onaylanmış gönderiler burada görünecektir.</p>
           </div>
         ) : (
-          <ScrollArea className="h-full w-full"> {/* Değişiklik: h-full */}
-            {/* Kartları tek sütunda ve ortalanmış göstermek için grid ayarları güncellendi */}
-            <div className="grid grid-cols-1 gap-6 p-4 place-items-center">
+          <ScrollArea className="h-full w-full">
+            {/* Kartları dikey olarak sıralamak ve ortalamak için flex kullanıldı */}
+            <div className="flex flex-col items-center gap-6 p-4">
               {posts.slice().reverse().map((post) => (
                 <PostPreviewCard
                   key={post.id}
@@ -51,6 +51,8 @@ export function PostHistory({ posts, onClearAllHistory, onDeleteSinglePost }: Po
                   showShareButton={true}
                   showDeleteButton={true}
                   onDeleteSinglePost={onDeleteSinglePost}
+                  // Kartın kendini ortalaması için ek bir stil, max-w-md ile birlikte çalışmalı
+                  className="self-center" 
                 />
               ))}
             </div>
