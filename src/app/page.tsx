@@ -6,11 +6,11 @@ import type { Post } from '@/types';
 import { PostCreator } from '@/components/post-creator';
 import { PostHistory } from '@/components/post-history';
 import { Separator } from '@/components/ui/separator';
-import { Clock, AlertTriangle, Timer } from 'lucide-react'; // Timer ikonu eklendi
+import { Clock, AlertTriangle, Timer } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { triggerAutoPostAndEmail } from '@/lib/actions';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { differenceInMinutes, differenceInHours, format, addHours, setHours, setMinutes, setSeconds, isPast, getHours, getMinutes } from 'date-fns'; // date-fns fonksiyonları eklendi
+import { differenceInMinutes, differenceInHours, format, addHours, setHours, setMinutes, setSeconds, isPast, getHours, getMinutes } from 'date-fns';
 
 const LOCAL_STORAGE_POSTS_KEY = 'cosmosCuratorPosts';
 const LOCAL_STORAGE_EMAIL_RECIPIENT_KEY = 'emailRecipient_cosmosCurator';
@@ -47,7 +47,6 @@ export default function HomePage() {
       updateNextPostTimeInfo(now);
     }, 1000);
 
-    // İlk yüklemede de çalıştır
     updateNextPostTimeInfo(new Date());
 
     return () => clearInterval(timerId);
@@ -59,13 +58,11 @@ export default function HomePage() {
     for (const hour of TARGET_HOURS) {
       let potentialNextTime = setSeconds(setMinutes(setHours(now, hour), 0), 0);
       if (isPast(potentialNextTime)) {
-        // Eğer saat geçmişse ve bu günün son hedef saati değilse, bir sonraki hedef saate bak
-        // Eğer bugünün son hedef saatiyse, yarının ilk hedef saatine bak
         if (hour === TARGET_HOURS[TARGET_HOURS.length -1]) {
-            potentialNextTime = addHours(potentialNextTime, 24); // Yarının aynı saati gibi düşün, sonra düzelt
+            potentialNextTime = addHours(potentialNextTime, 24); 
             potentialNextTime = setSeconds(setMinutes(setHours(potentialNextTime, TARGET_HOURS[0]),0),0);
         } else {
-            continue; // Bu saati geç, sonraki hedef saate bak
+            continue; 
         }
       }
       if (!nextTargetDateTime || potentialNextTime < nextTargetDateTime) {
@@ -73,12 +70,10 @@ export default function HomePage() {
       }
     }
     
-    // Eğer tüm hedef saatler bugün için geçmişse, yarının ilk hedef saatini al
     if (!nextTargetDateTime || isPast(nextTargetDateTime)) {
         let tomorrowFirstTarget = setSeconds(setMinutes(setHours(addHours(now, 24), TARGET_HOURS[0]), 0), 0);
         nextTargetDateTime = tomorrowFirstTarget;
     }
-
 
     if (nextTargetDateTime) {
       const hoursRemaining = differenceInHours(nextTargetDateTime, now);
@@ -88,16 +83,15 @@ export default function HomePage() {
         remaining: `${hoursRemaining} saat ${minutesRemaining} dakika sonra`
       });
     } else {
-      setNextPostTimeInfo(null); // Bu durum pek olası değil ama önlem
+      setNextPostTimeInfo(null);
     }
   };
-
 
   const handlePostApproved = (newPost: Post) => {
     setApprovedPosts(prevPosts => {
       const updatedPosts = [...prevPosts, newPost];
       if (updatedPosts.length > MAX_HISTORY_POSTS) {
-        updatedPosts.shift(); // En eski gönderiyi kaldır
+        updatedPosts.shift(); 
       }
       localStorage.setItem(LOCAL_STORAGE_POSTS_KEY, JSON.stringify(updatedPosts));
       return updatedPosts;
@@ -137,31 +131,31 @@ export default function HomePage() {
       const currentHour = getHours(now);
       const currentMinute = getMinutes(now);
 
-      if (currentHour < TARGET_HOURS[0] || currentHour > TARGET_HOURS[TARGET_HOURS.length -1]+1) { // Hedef saat aralığı dışında ise çık
+      if (currentHour < TARGET_HOURS[0] || currentHour > TARGET_HOURS[TARGET_HOURS.length -1]+1) {
         return;
       }
 
       for (const targetHour of TARGET_HOURS) {
-        if (currentHour === targetHour && currentMinute === 0) { // Tam saat başı kontrolü
+        if (currentHour === targetHour && currentMinute === 0) { 
           const slotKey = getSlotKey(targetHour);
           if (!sessionStorage.getItem(slotKey)) {
             console.log(`Otomatik gönderi tetikleniyor: ${targetHour}:00`);
-            sessionStorage.setItem(slotKey, 'true'); // Bu saat dilimi için gönderim yapıldığını işaretle
+            sessionStorage.setItem(slotKey, 'true'); 
 
             const recipientEmail = localStorage.getItem(LOCAL_STORAGE_EMAIL_RECIPIENT_KEY);
             if (!recipientEmail) {
               toast({
-                title: 'Otomatik Gönderi Hatası (Simülasyon)',
+                title: 'Otomatik Gönderi Hatası',
                 description: 'Alıcı e-posta adresi Ayarlar sayfasında tanımlanmamış. Otomatik gönderim yapılamadı.',
                 variant: 'destructive',
                 duration: 10000,
               });
-              return; // Alıcı e-posta yoksa işlemi durdur
+              return; 
             }
 
             toast({
               title: `Otomatik Gönderi Başlatıldı (${targetHour}:00)`,
-              description: 'Yapay zeka içerik üretiyor ve e-posta ile gönderecek... (Bu bir simülasyondur ve sayfa açıkken çalışır)',
+              description: 'Yapay zeka içerik üretiyor ve e-posta ile gönderecek...',
               duration: 7000,
             });
 
@@ -181,23 +175,21 @@ export default function HomePage() {
                 duration: 10000,
               });
             }
-            break; // O anki saat için işlem yapıldı, döngüden çık
+            break; 
           }
         }
       }
     };
 
-    // Dakikada bir kontrol et
     const intervalId = setInterval(checkAndTriggerAutoPost, 60000); 
-    checkAndTriggerAutoPost(); // Sayfa yüklendiğinde de bir kere kontrol et
+    checkAndTriggerAutoPost(); 
 
     return () => clearInterval(intervalId);
   }, [toast]);
 
-
   return (
     <main className="flex flex-col gap-4 p-4 md:gap-8 md:p-8 container mx-auto">
-      <div className="flex justify-between items-start"> {/* items-center yerine items-start yapıldı */}
+      <div className="flex justify-between items-start">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground">
             İçerik Paneli
@@ -208,7 +200,7 @@ export default function HomePage() {
           {nextPostTimeInfo && (
             <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground p-2 rounded-md bg-card border border-border shadow-sm">
               <Timer className="h-4 w-4 text-accent" />
-              <span>Sonraki gönderi: <strong>{nextPostTimeInfo.time}</strong> ({nextPostTimeInfo.remaining})</span>
+              <span>Sonraki otomatik gönderi: <strong>{nextPostTimeInfo.time}</strong> ({nextPostTimeInfo.remaining})</span>
             </div>
           )}
         </div>
@@ -223,11 +215,11 @@ export default function HomePage() {
 
       <Alert variant="default" className="mb-6 bg-blue-950/70 border-blue-700 text-blue-100">
         <AlertTriangle className="h-5 w-5 text-blue-300" />
-        <AlertTitle className="text-blue-200 font-bold">Simüle Edilmiş Otomatik Gönderi Oluşturma Aktif!</AlertTitle>
+        <AlertTitle className="text-blue-200 font-bold">Otomatik Gönderi Oluşturma ve E-posta Bildirimi Aktif!</AlertTitle>
         <AlertDescription className="text-blue-200/90 space-y-1">
-          <p>Bu sayfa tarayıcıda açık olduğu sürece, sistem {TARGET_HOURS.join(', ')} saatlerinde otomatik olarak bir gönderi içeriği oluşturup Ayarlar&apos;da belirttiğiniz e-posta adresine göndermeyi deneyecektir.</p>
-          <p className="font-semibold">Bu, gerçek bir sunucu tabanlı zamanlayıcı değildir. Tarayıcıyı veya bu sekmeyi kapatırsanız otomatik gönderim durur.</p>
-          <p>Alıcı e-posta adresinizi Ayarlar sayfasından kaydettiğinizden emin olun.</p>
+          <p>Bu sayfa tarayıcıda açık olduğu sürece, sistem belirlenen saatlerde ({TARGET_HOURS.join(', ')}) otomatik olarak bir gönderi içeriği oluşturup, Ayarlar sayfasında belirttiğiniz e-posta adresine gönderecektir.</p>
+          <p className="font-semibold">Önemli: Bu özellik, tarayıcınızın bu sekmeyi açık ve aktif tutmasına bağlıdır. Tarayıcıyı veya bu sekmeyi kapatırsanız otomatik gönderim durur.</p>
+          <p>Lütfen alıcı e-posta adresinizin Ayarlar sayfasından doğru bir şekilde kaydedildiğinden emin olun.</p>
         </AlertDescription>
       </Alert>
 
