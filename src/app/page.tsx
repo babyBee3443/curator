@@ -10,21 +10,32 @@ import { Clock, AlertTriangle, Timer } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { triggerAutoPostAndEmail } from '@/lib/actions';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { differenceInMinutes, differenceInHours, format, addHours, setHours, setMinutes, setSeconds, isPast, getHours, getMinutes } from 'date-fns';
+import { differenceInMinutes, differenceInHours, format, addDays, setHours, setMinutes, setSeconds, getHours, getMinutes } from 'date-fns';
 
 const LOCAL_STORAGE_POSTS_KEY = 'cosmosCuratorPosts';
 const LOCAL_STORAGE_EMAIL_RECIPIENT_KEY = 'emailRecipient_cosmosCurator';
-const LOCAL_STORAGE_TARGET_HOURS_KEY = 'cosmosCuratorTargetHours';
+const LOCAL_STORAGE_TARGET_TIMES_KEY = 'cosmosCuratorTargetTimes'; // Updated key
 const SESSION_STORAGE_AUTO_SENT_PREFIX = 'cosmosCuratorAutoSent_';
 const MAX_HISTORY_POSTS = 2;
-const DEFAULT_TARGET_HOURS = [9, 12, 15, 18, 21];
+
+interface TargetTime {
+  hour: number;
+  minute: number;
+}
+const DEFAULT_TARGET_TIMES: TargetTime[] = [ // Updated default
+  { hour: 9, minute: 0 },
+  { hour: 12, minute: 0 },
+  { hour: 15, minute: 0 },
+  { hour: 18, minute: 0 },
+  { hour: 21, minute: 0 },
+].sort((a, b) => a.hour - b.hour || a.minute - b.minute);
 
 
 export default function HomePage() {
   const [approvedPosts, setApprovedPosts] = useState<Post[]>([]);
   const [currentTime, setCurrentTime] = useState('');
   const [nextPostTimeInfo, setNextPostTimeInfo] = useState<{ time: string; remaining: string } | null>(null);
-  const [dynamicTargetHours, setDynamicTargetHours] = useState<number[]>([...DEFAULT_TARGET_HOURS].sort((a,b)=>a-b));
+  const [dynamicTargetTimes, setDynamicTargetTimes] = useState<TargetTime[]>([...DEFAULT_TARGET_TIMES]);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -42,23 +53,22 @@ export default function HomePage() {
       }
     }
 
-    const storedTargetHours = localStorage.getItem(LOCAL_STORAGE_TARGET_HOURS_KEY);
-    if (storedTargetHours) {
+    const storedTargetTimes = localStorage.getItem(LOCAL_STORAGE_TARGET_TIMES_KEY);
+    if (storedTargetTimes) {
         try {
-            const parsedHours = JSON.parse(storedTargetHours);
-            if (Array.isArray(parsedHours) && parsedHours.length > 0 && parsedHours.every(h => typeof h === 'number')) {
-                setDynamicTargetHours(parsedHours.sort((a,b) => a-b));
+            const parsedTimes = JSON.parse(storedTargetTimes);
+            if (Array.isArray(parsedTimes) && parsedTimes.length > 0 && parsedTimes.every(t => typeof t.hour === 'number' && typeof t.minute === 'number')) {
+                setDynamicTargetTimes(parsedTimes.sort((a,b) => a.hour - b.hour || a.minute - b.minute));
             } else {
-                 setDynamicTargetHours([...DEFAULT_TARGET_HOURS].sort((a,b)=>a-b));
+                 setDynamicTargetTimes([...DEFAULT_TARGET_TIMES]);
             }
         } catch (e) {
-            console.error("Kaydedilmiş hedef saatler ayrıştırılamadı, varsayılana dönülüyor:", e);
-            setDynamicTargetHours([...DEFAULT_TARGET_HOURS].sort((a,b)=>a-b));
+            console.error("Kaydedilmiş hedef zamanlar ayrıştırılamadı, varsayılana dönülüyor:", e);
+            setDynamicTargetTimes([...DEFAULT_TARGET_TIMES]);
         }
     } else {
-        setDynamicTargetHours([...DEFAULT_TARGET_HOURS].sort((a,b)=>a-b));
+        setDynamicTargetTimes([...DEFAULT_TARGET_TIMES]);
     }
-
   }, []);
 
   useEffect(() => {
@@ -68,13 +78,13 @@ export default function HomePage() {
       updateNextPostTimeInfo(now);
     }, 1000);
 
-    updateNextPostTimeInfo(new Date()); // Initial call
+    updateNextPostTimeInfo(new Date()); 
 
     return () => clearInterval(timerId);
-  }, [dynamicTargetHours]); // Re-run if target hours change
+  }, [dynamicTargetTimes]); 
 
   const updateNextPostTimeInfo = (now: Date) => {
-    if (dynamicTargetHours.length === 0) {
+    if (dynamicTargetTimes.length === 0) {
         setNextPostTimeInfo(null);
         return;
     }
@@ -82,18 +92,17 @@ export default function HomePage() {
     const currentHour = getHours(now);
     const currentMinute = getMinutes(now);
 
-    // Find the next target time for today
-    for (const hour of dynamicTargetHours) {
-      if (hour > currentHour || (hour === currentHour && 0 > currentMinute)) {
-        nextTargetDateTime = setSeconds(setMinutes(setHours(now, hour), 0), 0);
+    for (const target of dynamicTargetTimes) {
+      if (target.hour > currentHour || (target.hour === currentHour && target.minute > currentMinute)) {
+        nextTargetDateTime = setSeconds(setMinutes(setHours(now, target.hour), target.minute), 0);
         break;
       }
     }
 
-    // If all today's target times have passed, find the first target time for tomorrow
     if (!nextTargetDateTime) {
-      const firstHourOfNextDay = dynamicTargetHours[0];
-      nextTargetDateTime = addHours(setSeconds(setMinutes(setHours(now, firstHourOfNextDay), 0), 0), 24);
+      const firstTargetOfNextDay = dynamicTargetTimes[0];
+      const tomorrow = addDays(now, 1);
+      nextTargetDateTime = setSeconds(setMinutes(setHours(tomorrow, firstTargetOfNextDay.hour), firstTargetOfNextDay.minute), 0);
     }
     
     if (nextTargetDateTime) {
@@ -104,7 +113,7 @@ export default function HomePage() {
         remaining: `${hoursRemaining} saat ${minutesRemaining} dakika sonra`
       });
     } else {
-      setNextPostTimeInfo(null); // Should not happen if dynamicTargetHours is not empty
+      setNextPostTimeInfo(null); 
     }
   };
 
@@ -142,25 +151,24 @@ export default function HomePage() {
   };
 
   useEffect(() => {
-    const getSlotKey = (hour: number) => {
+    const getSlotKey = (hour: number, minute: number) => {
       const today = format(new Date(), 'yyyy-MM-dd');
-      return `${SESSION_STORAGE_AUTO_SENT_PREFIX}${today}_${hour}`;
+      return `${SESSION_STORAGE_AUTO_SENT_PREFIX}${today}_${hour}_${minute}`;
     };
 
     const checkAndTriggerAutoPost = async () => {
-      if (dynamicTargetHours.length === 0) {
-        return; // No target hours set
+      if (dynamicTargetTimes.length === 0) {
+        return; 
       }
       const now = new Date();
       const currentHour = getHours(now);
       const currentMinute = getMinutes(now);
 
-      // Check if it's time to post for any of the dynamic target hours
-      for (const targetHour of dynamicTargetHours) {
-        if (currentHour === targetHour && currentMinute === 0) { 
-          const slotKey = getSlotKey(targetHour);
+      for (const target of dynamicTargetTimes) {
+        if (currentHour === target.hour && currentMinute === target.minute) { 
+          const slotKey = getSlotKey(target.hour, target.minute);
           if (!sessionStorage.getItem(slotKey)) {
-            console.log(`Otomatik gönderi tetikleniyor: ${targetHour}:00`);
+            console.log(`Otomatik gönderi tetikleniyor: ${target.hour}:${target.minute}`);
             sessionStorage.setItem(slotKey, 'true'); 
 
             const recipientEmail = localStorage.getItem(LOCAL_STORAGE_EMAIL_RECIPIENT_KEY);
@@ -175,7 +183,7 @@ export default function HomePage() {
             }
 
             toast({
-              title: `Otomatik Gönderi Başlatıldı (${targetHour}:00)`,
+              title: `Otomatik Gönderi Başlatıldı (${String(target.hour).padStart(2,'0')}:${String(target.minute).padStart(2,'0')})`,
               description: 'Yapay zeka içerik üretiyor ve e-posta ile gönderecek...',
               duration: 7000,
             });
@@ -183,14 +191,14 @@ export default function HomePage() {
             try {
               await triggerAutoPostAndEmail(recipientEmail);
               toast({
-                title: `Otomatik Gönderi Başarılı (${targetHour}:00)`,
+                title: `Otomatik Gönderi Başarılı (${String(target.hour).padStart(2,'0')}:${String(target.minute).padStart(2,'0')})`,
                 description: 'İçerik oluşturuldu ve e-posta ile gönderildi.',
                 className: 'bg-green-600 text-white border-green-700',
                 duration: 10000,
               });
             } catch (error) {
               toast({
-                title: `Otomatik Gönderi Hatası (${targetHour}:00)`,
+                title: `Otomatik Gönderi Hatası (${String(target.hour).padStart(2,'0')}:${String(target.minute).padStart(2,'0')})`,
                 description: (error as Error).message,
                 variant: 'destructive',
                 duration: 10000,
@@ -203,15 +211,15 @@ export default function HomePage() {
     };
 
     const intervalId = setInterval(checkAndTriggerAutoPost, 60000); // Check every minute
-    checkAndTriggerAutoPost(); // Initial check
+    checkAndTriggerAutoPost(); 
 
     return () => clearInterval(intervalId);
-  }, [toast, dynamicTargetHours]); // Re-run if target hours change
+  }, [toast, dynamicTargetTimes]); 
 
 
-  const getTargetHoursString = () => {
-    if (dynamicTargetHours.length === 0) return "Hiçbir saat seçilmemiş. Otomatik gönderim devre dışı.";
-    return dynamicTargetHours.map(h => `${h.toString().padStart(2, '0')}:00`).join(', ');
+  const getTargetTimesString = () => {
+    if (dynamicTargetTimes.length === 0) return "Hiçbir zaman seçilmemiş. Otomatik gönderim devre dışı.";
+    return dynamicTargetTimes.map(t => `${String(t.hour).padStart(2, '0')}:${String(t.minute).padStart(2, '0')}`).join(', ');
   };
 
 
@@ -225,16 +233,16 @@ export default function HomePage() {
           <p className="text-muted-foreground">
             Yapay zeka destekli Instagram içerik oluşturma sürecinizi yönetin.
           </p>
-          {nextPostTimeInfo && dynamicTargetHours.length > 0 && (
+          {nextPostTimeInfo && dynamicTargetTimes.length > 0 && (
             <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground p-2 rounded-md bg-card border border-border shadow-sm">
               <Timer className="h-4 w-4 text-accent" />
               <span>Sonraki otomatik gönderi: <strong>{nextPostTimeInfo.time}</strong> ({nextPostTimeInfo.remaining})</span>
             </div>
           )}
-           {dynamicTargetHours.length === 0 && (
+           {dynamicTargetTimes.length === 0 && (
              <div className="mt-2 flex items-center gap-2 text-sm text-orange-400 p-2 rounded-md bg-orange-950 border border-orange-700 shadow-sm">
                 <AlertTriangle className="h-4 w-4" />
-                <span>Otomatik gönderi için Ayarlar'dan saat seçimi yapılmamış. Otomatik gönderim devre dışı.</span>
+                <span>Otomatik gönderi için Ayarlar'dan zaman seçimi yapılmamış. Otomatik gönderim devre dışı.</span>
             </div>
            )}
         </div>
@@ -251,9 +259,9 @@ export default function HomePage() {
         <AlertTriangle className="h-5 w-5 text-blue-300" />
         <AlertTitle className="text-blue-200 font-bold">Otomatik Gönderi Oluşturma ve E-posta Bildirimi Aktif!</AlertTitle>
         <AlertDescription className="text-blue-200/90 space-y-1">
-          <p>Bu sayfa tarayıcıda açık olduğu sürece, sistem belirlenen saatlerde ({getTargetHoursString()}) otomatik olarak bir gönderi içeriği oluşturup, Ayarlar sayfasında belirttiğiniz e-posta adresine gönderecektir.</p>
+          <p>Bu sayfa tarayıcıda açık olduğu sürece, sistem Ayarlar sayfasında belirlediğiniz zamanlarda ({getTargetTimesString()}) otomatik olarak bir gönderi içeriği oluşturup, yine Ayarlar sayfasında belirttiğiniz e-posta adresine gönderecektir.</p>
           <p className="font-semibold">Önemli: Bu özellik, tarayıcınızın bu sekmeyi açık ve aktif tutmasına bağlıdır. Tarayıcıyı veya bu sekmeyi kapatırsanız otomatik gönderim durur.</p>
-          <p>Lütfen alıcı e-posta adresinizin Ayarlar sayfasından doğru bir şekilde kaydedildiğinden emin olun. Otomatik gönderi zamanlarını da Ayarlar sayfasından özelleştirebilirsiniz.</p>
+          <p>Lütfen alıcı e-posta adresinizin ve otomatik gönderi zamanlarınızın Ayarlar sayfasından doğru bir şekilde kaydedildiğinden emin olun.</p>
         </AlertDescription>
       </Alert>
 

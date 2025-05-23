@@ -6,15 +6,26 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
-import { Mail, Loader2, Settings as SettingsIcon, Info, ClockIcon, Save } from 'lucide-react';
+import { Mail, Loader2, Settings as SettingsIcon, Info, ClockIcon, Save, ListPlus, Trash2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from '@/components/ui/badge';
 
 const EMAIL_RECIPIENT_KEY = 'emailRecipient_cosmosCurator';
-const TARGET_HOURS_KEY = 'cosmosCuratorTargetHours';
-const DEFAULT_TARGET_HOURS = [9, 12, 15, 18, 21];
+const TARGET_TIMES_KEY = 'cosmosCuratorTargetTimes'; // Updated key
+interface TargetTime {
+  hour: number;
+  minute: number;
+}
+const DEFAULT_TARGET_TIMES: TargetTime[] = [ // Updated default
+  { hour: 9, minute: 0 },
+  { hour: 12, minute: 0 },
+  { hour: 15, minute: 0 },
+  { hour: 18, minute: 0 },
+  { hour: 21, minute: 0 },
+].sort((a, b) => a.hour - b.hour || a.minute - b.minute);
 
 export default function SettingsPage() {
   const { toast } = useToast();
@@ -22,9 +33,10 @@ export default function SettingsPage() {
   const [isSavingEmail, setIsSavingEmail] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  const [availableHours] = useState(Array.from({ length: 24 }, (_, i) => i)); // 0-23
-  const [selectedHours, setSelectedHours] = useState<number[]>([]);
-  const [isSavingHours, setIsSavingHours] = useState(false);
+  const [selectedTimes, setSelectedTimes] = useState<TargetTime[]>([]);
+  const [newHour, setNewHour] = useState(9);
+  const [newMinute, setNewMinute] = useState(0);
+  const [isSavingTimes, setIsSavingTimes] = useState(false);
 
   useEffect(() => {
     const storedRecipientEmail = localStorage.getItem(EMAIL_RECIPIENT_KEY);
@@ -32,21 +44,21 @@ export default function SettingsPage() {
       setRecipientEmail(storedRecipientEmail);
     }
 
-    const storedTargetHours = localStorage.getItem(TARGET_HOURS_KEY);
-    if (storedTargetHours) {
+    const storedTargetTimes = localStorage.getItem(TARGET_TIMES_KEY);
+    if (storedTargetTimes) {
       try {
-        const parsedHours = JSON.parse(storedTargetHours);
-        if (Array.isArray(parsedHours) && parsedHours.every(h => typeof h === 'number')) {
-          setSelectedHours(parsedHours.sort((a,b) => a-b));
+        const parsedTimes = JSON.parse(storedTargetTimes);
+        if (Array.isArray(parsedTimes) && parsedTimes.every(t => typeof t.hour === 'number' && typeof t.minute === 'number')) {
+          setSelectedTimes(parsedTimes.sort((a, b) => a.hour - b.hour || a.minute - b.minute));
         } else {
-          setSelectedHours([...DEFAULT_TARGET_HOURS].sort((a,b) => a-b));
+          setSelectedTimes([...DEFAULT_TARGET_TIMES]);
         }
       } catch (e) {
-        console.error("Hedef saatler ayrıştırılamadı, varsayılana dönülüyor:", e);
-        setSelectedHours([...DEFAULT_TARGET_HOURS].sort((a,b) => a-b));
+        console.error("Hedef zamanlar ayrıştırılamadı, varsayılana dönülüyor:", e);
+        setSelectedTimes([...DEFAULT_TARGET_TIMES]);
       }
     } else {
-      setSelectedHours([...DEFAULT_TARGET_HOURS].sort((a,b) => a-b));
+      setSelectedTimes([...DEFAULT_TARGET_TIMES]);
     }
     setIsLoading(false);
   }, []);
@@ -69,27 +81,39 @@ export default function SettingsPage() {
     });
   };
 
-  const handleHourToggle = (hour: number) => {
-    setSelectedHours(prev =>
-      prev.includes(hour) ? prev.filter(h => h !== hour).sort((a,b)=>a-b) : [...prev, hour].sort((a,b)=>a-b)
-    );
+  const handleAddTime = () => {
+    const newTime = { hour: newHour, minute: newMinute };
+    // Check for duplicates
+    if (selectedTimes.some(time => time.hour === newTime.hour && time.minute === newTime.minute)) {
+      toast({
+        title: 'Zaten Mevcut',
+        description: `${String(newHour).padStart(2, '0')}:${String(newMinute).padStart(2, '0')} zaten listede.`,
+        variant: 'default'
+      });
+      return;
+    }
+    setSelectedTimes(prev => [...prev, newTime].sort((a, b) => a.hour - b.hour || a.minute - b.minute));
   };
 
-  const handleSaveTargetHours = () => {
-    if (selectedHours.length === 0) {
+  const handleRemoveTime = (indexToRemove: number) => {
+    setSelectedTimes(prev => prev.filter((_, index) => index !== indexToRemove));
+  };
+
+  const handleSaveTargetTimes = () => {
+    if (selectedTimes.length === 0) {
         toast({
-            title: 'Saat Seçimi Yok',
-            description: 'Lütfen en az bir otomatik gönderi saati seçin veya varsayılan saatleri kullanmak için birkaç saat seçin.',
+            title: 'Zaman Seçimi Yok',
+            description: 'Lütfen en az bir otomatik gönderi zamanı seçin.',
             variant: 'destructive',
         });
         return;
     }
-    setIsSavingHours(true);
-    localStorage.setItem(TARGET_HOURS_KEY, JSON.stringify(selectedHours));
-    setIsSavingHours(false);
+    setIsSavingTimes(true);
+    localStorage.setItem(TARGET_TIMES_KEY, JSON.stringify(selectedTimes));
+    setIsSavingTimes(false);
     toast({
-      title: 'Hedef Saatler Kaydedildi',
-      description: `Otomatik gönderi için yeni hedef saatler: ${selectedHours.map(h => `${h.toString().padStart(2, '0')}:00`).join(', ')}`,
+      title: 'Hedef Zamanlar Kaydedildi',
+      description: `Otomatik gönderi için yeni hedef zamanlar: ${selectedTimes.map(t => `${String(t.hour).padStart(2, '0')}:${String(t.minute).padStart(2, '0')}`).join(', ')}`,
     });
   };
 
@@ -129,51 +153,26 @@ export default function SettingsPage() {
               <Info className="h-5 w-5 text-blue-300" />
               <AlertTitle className="text-blue-200 font-bold">E-posta Gönderimi İçin Gerekli Kurulum (ÖNEMLİ)</AlertTitle>
               <AlertDescription className="text-blue-200/90 space-y-3">
-                <p>Bu özellik, yapay zeka tarafından oluşturulan gönderi içeriklerinin size e-posta ile gönderilmesini sağlar. E-posta gönderimi, Nodemailer kütüphanesi ve bir Gmail hesabı üzerinden Uygulama Şifresi kullanılarak gerçekleştirilir.</p>
-                <p className="font-semibold text-yellow-300">Gerçek E-posta Gönderimi İçin Yapılması Gerekenler:</p>
-                <ol className="list-decimal list-inside text-sm pl-4 space-y-2">
-                  <li>
-                    <strong>Nodemailer Kurulumu:</strong> Projenizin ana dizininde terminali açıp <code className="bg-black/50 px-1 py-0.5 rounded">npm install nodemailer</code> komutunu çalıştırarak Nodemailer kütüphanesini kurun (eğer daha önce kurulmadıysa). `typescript` kullanıyorsanız `@types/nodemailer` paketini de kurun: <code className="bg-black/50 px-1 py-0.5 rounded">npm install --save-dev @types/nodemailer</code>.
-                  </li>
-                  <li>
-                    <strong>`.env` Dosyasını Kontrol Edin/Oluşturun:</strong>
-                    <ul className="list-disc list-inside pl-4 mt-1 text-xs">
-                      <li>Projenizin **ANA DİZİNİNDE** (`package.json` dosyasıyla aynı yerde) **`.env`** adında bir dosya olduğundan emin olun. Bu dosya, Next.js tarafından ortam değişkenlerini yüklemek için kullanılır. (`.env.local` de kullanılabilir ancak `.env` genel bir standarttır).</li>
-                    </ul>
-                  </li>
-                  <li>
-                    <strong>Ortam Değişkenlerini `.env` Dosyasına Ekleyin:</strong> Aşağıdaki satırları **tam olarak bu şekilde** `.env` dosyanızın içine kopyalayıp yapıştırın ve kendi bilgilerinizle değiştirin (başında veya sonunda fazladan boşluk olmamalı, değerler tırnak içinde olmamalı):
-                    <pre className="mt-2 p-3 bg-black/50 rounded text-xs whitespace-pre-wrap text-blue-100"><code>EMAIL_USER=getdusbox@gmail.com{'\n'}EMAIL_APP_PASSWORD=csfd eaun yjou bzsz</code></pre>
-                    <ul className="list-disc list-inside pl-4 text-xs mt-1">
-                        <li><code className="text-yellow-300">EMAIL_USER</code>: E-postaların gönderileceği sizin Gmail adresiniz (örneğin <code className="text-yellow-300">getdusbox@gmail.com</code>).</li>
-                        <li><code className="text-yellow-300">EMAIL_APP_PASSWORD</code>: Yukarıdaki Gmail hesabınız için Google Hesap ayarlarınızdan oluşturduğunuz 16 haneli **Uygulama Şifresi**. Normal Gmail şifreniz burada çalışmayacaktır.</li>
-                    </ul>
-                     <p className="mt-1 text-xs">Not: `.env` dosyanızda <code className="bg-black/50 px-1 py-0.5 rounded">GEMINI_API_KEY</code> gibi başka değişkenler de olabilir. Onları silmeyin, sadece <code className="bg-black/50 px-1 py-0.5 rounded">EMAIL_USER</code> ve <code className="bg-black/50 px-1 py-0.5 rounded">EMAIL_APP_PASSWORD</code> satırlarını ekleyin veya güncelleyin. Dosyanın içinde <code className="text-yellow-300">csfd eaun yjou bzsz</code> şifresi varsa, bunu kendi geçerli Google Uygulama Şifrenizle değiştirmeyi unutmayın.</p>
-                  </li>
-                   <li className="text-red-400 font-bold bg-red-900/50 p-2 rounded-md">
-                    <strong>SUNUCUYU YENİDEN BAŞLATIN (HAYATİ ÖNEMDE!):</strong> `.env` dosyasını oluşturduktan veya içeriğini değiştirdikten sonra, değişikliklerin Next.js tarafından algılanması için geliştirme sunucunuzu **KESİNLİKLE durdurup (Terminalde Ctrl+C yapıp) sonra tekrar `npm run dev` (veya `yarn dev`) komutuyla YENİDEN BAŞLATMANIZ ZORUNLUDUR.** Bu adımı atlarsanız, ortam değişkenleri yüklenmez ve "Gönderen bilgileri eksik" hatası alırsınız.
-                  </li>
-                  <li>
-                    <strong>Google Hesap Ayarları (EMAIL_USER için):</strong>
-                    <ul className="list-disc list-inside pl-4 text-xs mt-1">
-                        <li>Hesabınızda İki Adımlı Doğrulama'nın etkinleştirilmiş olması gerekir.</li>
-                        <li>Google Hesap ayarlarınızdan bir "Uygulama Şifresi" oluşturmanız ve `.env` dosyasındaki `EMAIL_APP_PASSWORD` kısmına bu 16 haneli şifreyi girmeniz gerekir.</li>
-                    </ul>
-                  </li>
-                </ol>
-                <p className="mt-3">Bu ayarlar doğru yapıldığında, uygulama "İçeriği E-posta İle Gönder" butonuyla veya otomatik gönderi özelliğiyle belirttiğiniz alıcıya e-posta göndermeyi deneyecektir. Hata olması durumunda bildirim alacaksınız ve detaylar için **tarayıcı konsolunu** ve özellikle **sunucu terminalindeki (Next.js'in çalıştığı yer) logları** kontrol edebilirsiniz.</p>
-                 <p className="mt-2 font-semibold text-orange-300">
-                    Eğer hala "Gönderen bilgileri eksik" hatası alıyorsanız, lütfen Next.js'in çalıştığı terminaldeki şu logları kontrol edin ve bana iletin:
-                </p>
-                 <ul className="list-disc list-inside pl-4 text-xs mt-1">
-                    <li><code>[ACTIONS.TS] MODÜL YÜKLENDİ...</code></li>
-                    <li><code>[ACTIONS.TS] &gt; process.env.EMAIL_USER: "..."</code></li>
-                    <li><code>[ACTIONS.TS] &gt; process.env.EMAIL_APP_PASSWORD: "..."</code></li>
-                    <li><code>[sendPostByEmail] FONKSIYON ÇAĞRILDI. Alıcı: ...</code></li>
-                    <li><code>[sendPostByEmail] Ortam Değişkenleri Kontrolü (Fonksiyon İçi):</code></li>
-                    <li><code>[sendPostByEmail] &gt; senderEmail (EMAIL_USER) DEĞERİ: "..." (tip: ...)</code></li>
-                    <li><code>[sendPostByEmail] &gt; senderAppPassword DEĞERİ: "..." (tip: ...)</code></li>
+                 <p>E-posta gönderimi için projenizin ana dizininde (`package.json` dosyasıyla aynı yerde) **`.env.local`** adında bir dosya oluşturun (veya varsa düzenleyin). İçine aşağıdaki satırları **tam olarak bu şekilde** ekleyin ve kendi bilgilerinizle doldurun (başında veya sonunda fazladan boşluk olmamalı, değerler tırnak içinde olmamalı):</p>
+                <pre className="mt-2 p-3 bg-black/50 rounded text-xs whitespace-pre-wrap text-blue-100"><code>EMAIL_SENDER_ADDRESS=getdusbox@gmail.com{'\n'}EMAIL_APP_PASSWORD=qdti jdwa wxpd tkwl</code></pre>
+                <ul className="list-disc list-inside pl-4 text-xs mt-1">
+                  <li><code className="text-yellow-300">EMAIL_SENDER_ADDRESS</code>: E-postaların gönderileceği sizin Gmail adresiniz.</li>
+                  <li><code className="text-yellow-300">EMAIL_APP_PASSWORD</code>: Yukarıdaki Gmail hesabınız için Google Hesap ayarlarınızdan oluşturduğunuz 16 haneli **Uygulama Şifresi**. Normal Gmail şifreniz burada çalışmayacaktır.</li>
                 </ul>
+                <p className="mt-1 text-xs">Not: `.env.local` dosyanızda başka değişkenler de olabilir. Onları silmeyin, sadece bu iki satırı ekleyin veya güncelleyin.</p>
+                <p className="font-semibold text-yellow-300">Google Hesap Ayarları (EMAIL_SENDER_ADDRESS için):</p>
+                <ul className="list-disc list-inside pl-4 text-xs">
+                  <li>Hesabınızda İki Adımlı Doğrulama'nın etkinleştirilmiş olması gerekir.</li>
+                  <li>Google Hesap ayarlarınızdan bir "Uygulama Şifresi" oluşturmanız ve `.env.local` dosyasındaki `EMAIL_APP_PASSWORD` kısmına bu 16 haneli şifreyi girmeniz gerekir.</li>
+                </ul>
+                <p className="text-red-400 font-bold bg-red-900/50 p-2 rounded-md">
+                  <strong>SUNUCUYU YENİDEN BAŞLATIN (HAYATİ ÖNEMDE!):</strong> `.env.local` dosyasını oluşturduktan veya içeriğini değiştirdikten sonra, değişikliklerin Next.js tarafından algılanması için geliştirme sunucunuzu **KESİNLİKLE durdurup (Terminalde Ctrl+C yapıp) sonra tekrar `npm run dev` (veya `yarn dev`) komutuyla YENİDEN BAŞLATMANIZ ZORUNLUDUR.**
+                </p>
+                <p className="mt-2">Eğer hala "Gönderen bilgileri eksik" hatası alıyorsanız, lütfen terminaldeki (Next.js'in çalıştığı yer) şu logları kontrol edin:
+                  <br /><code>[sendPostByEmail] Ortam Değişkenleri Kontrolü (Fonksiyon İçi):</code>
+                  <br /><code>[sendPostByEmail] &gt; senderEmail (process.env.EMAIL_SENDER_ADDRESS) DEĞERİ: "..."</code>
+                  <br /><code>[sendPostByEmail] &gt; senderAppPassword (process.env.EMAIL_APP_PASSWORD) DEĞERİ: "..."</code>
+                </p>
               </AlertDescription>
             </Alert>
 
@@ -213,34 +212,74 @@ export default function SettingsPage() {
               Otomatik Gönderi Zamanları Ayarları
             </CardTitle>
             <CardDescription>
-              Otomatik gönderilerin hangi saatlerde oluşturulup e-posta ile gönderileceğini seçin. Varsayılan saatler: 09, 12, 15, 18, 21.
+              Otomatik gönderilerin hangi saat ve dakikalarda oluşturulup e-posta ile gönderileceğini seçin.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="grid grid-cols-4 sm:grid-cols-6 gap-4">
-              {availableHours.map(hour => (
-                <div key={hour} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={`hour-${hour}`}
-                    checked={selectedHours.includes(hour)}
-                    onCheckedChange={() => handleHourToggle(hour)}
-                  />
-                  <Label htmlFor={`hour-${hour}`} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                    {hour.toString().padStart(2, '0')}:00
-                  </Label>
-                </div>
-              ))}
+            <div className="space-y-4">
+              <Label className="text-base font-medium text-foreground">Yeni Hedef Zaman Ekle:</Label>
+              <div className="flex items-center gap-2">
+                <Select onValueChange={(val) => setNewHour(parseInt(val))} value={String(newHour)}>
+                  <SelectTrigger className="w-[100px]">
+                    <SelectValue placeholder="Saat" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.from({ length: 24 }).map((_, i) => (
+                      <SelectItem key={`h-${i}`} value={String(i)}>{String(i).padStart(2, '0')}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <span className="font-semibold">:</span>
+                <Select onValueChange={(val) => setNewMinute(parseInt(val))} value={String(newMinute)}>
+                  <SelectTrigger className="w-[100px]">
+                    <SelectValue placeholder="Dakika" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.from({ length: 60 }).map((_, i) => (
+                      <SelectItem key={`m-${i}`} value={String(i)}>{String(i).padStart(2, '0')}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button onClick={handleAddTime} variant="outline" size="icon">
+                  <ListPlus className="h-5 w-5" />
+                  <span className="sr-only">Zaman Ekle</span>
+                </Button>
+              </div>
             </div>
-            <p className="text-xs text-muted-foreground">
-              Seçilen saatler: {selectedHours.length > 0 ? selectedHours.map(h => `${h.toString().padStart(2, '0')}:00`).join(', ') : "Hiçbiri (Varsayılanlar kullanılacak)"}
-            </p>
+
+            {selectedTimes.length > 0 && (
+              <div className="space-y-2">
+                <Label className="text-base font-medium text-foreground">Kaydedilmiş Hedef Zamanlar:</Label>
+                <div className="flex flex-wrap gap-2 p-3 border rounded-md bg-muted/30">
+                  {selectedTimes.map((time, index) => (
+                    <Badge key={index} variant="secondary" className="text-sm tabular-nums">
+                      {String(time.hour).padStart(2, '0')}:{String(time.minute).padStart(2, '0')}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="ml-2 h-5 w-5 hover:bg-destructive/20 hover:text-destructive"
+                        onClick={() => handleRemoveTime(index)}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                        <span className="sr-only">Kaldır</span>
+                      </Button>
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+             {selectedTimes.length === 0 && (
+                <p className="text-sm text-muted-foreground">Henüz kaydedilmiş hedef zaman yok. Otomatik gönderim için en az bir zaman ekleyin.</p>
+             )}
+
+
             <Button
-              onClick={handleSaveTargetHours}
-              disabled={isSavingHours}
+              onClick={handleSaveTargetTimes}
+              disabled={isSavingTimes || selectedTimes.length === 0}
               className="w-full"
             >
-              {isSavingHours ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-5 w-5" />}
-              Hedef Saatleri Kaydet
+              {isSavingTimes ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-5 w-5" />}
+              Hedef Zamanları Kaydet
             </Button>
           </CardContent>
         </Card>
