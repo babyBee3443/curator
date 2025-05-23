@@ -65,8 +65,8 @@ export default function SettingsPage() {
       </div>
       <Separator className="my-6" />
 
-      <div className="grid gap-8 md:grid-cols-1 lg:grid-cols-1"> {/* Only one card now */}
-        <Card className="w-full max-w-2xl mx-auto shadow-lg"> {/* Centered the card */}
+      <div className="grid gap-8 md:grid-cols-1 lg:grid-cols-1">
+        <Card className="w-full max-w-2xl mx-auto shadow-lg">
           <CardHeader>
             <CardTitle className="text-xl flex items-center gap-2">
               <Mail className="h-6 w-6 text-accent" />
@@ -85,7 +85,7 @@ export default function SettingsPage() {
                 <p className="font-semibold text-yellow-300">Gerçek E-posta Gönderimi İçin Yapılması Gerekenler:</p>
                 <ol className="list-decimal list-inside text-sm pl-4 space-y-2">
                   <li>
-                    <strong>Nodemailer Kurulumu (Eğer yapmadıysanız):</strong> Projenizin ana dizininde terminali açıp <code className="bg-black/50 px-1 py-0.5 rounded">npm install nodemailer</code> komutunu çalıştırarak Nodemailer kütüphanesini kurun. Bu, `package.json` dosyanıza Nodemailer'ı ekleyecektir. (Bu işlem daha önceki adımlarda yapılmış olmalı.)
+                    <strong>Nodemailer Kurulumu (Eğer yapmadıysanız):</strong> Projenizin ana dizininde terminali açıp <code className="bg-black/50 px-1 py-0.5 rounded">npm install nodemailer</code> komutunu çalıştırarak Nodemailer kütüphanesini kurun. (Bu işlem daha önceki adımlarda yapılmış olmalı.)
                   </li>
                   <li>
                     <strong>`.env` Dosyasını Kontrol Edin/Oluşturun:</strong>
@@ -101,6 +101,7 @@ export default function SettingsPage() {
                         <li><code className="text-yellow-300">EMAIL_APP_PASSWORD</code>: Yukarıdaki Gmail hesabınız için Google Hesap ayarlarınızdan oluşturduğunuz 16 haneli **Uygulama Şifresi**. Normal Gmail şifreniz burada çalışmayacaktır.</li>
                     </ul>
                      <p className="mt-1 text-xs">Not: `.env` dosyanızda <code className="bg-black/50 px-1 py-0.5 rounded">GEMINI_API_KEY</code> gibi başka değişkenler de olabilir. Onları silmeyin, sadece <code className="bg-black/50 px-1 py-0.5 rounded">EMAIL_USER</code> ve <code className="bg-black/50 px-1 py-0.5 rounded">EMAIL_APP_PASSWORD</code> satırlarını ekleyin veya güncelleyin.</p>
+                     <p className="mt-1 text-xs">`.env` dosyasındaki şifre <code className="text-yellow-300">csfd eaun yjou bzsz</code> ise, bunu kendi geçerli Google Uygulama Şifrenizle değiştirmeyi unutmayın.</p>
                   </li>
                    <li className="text-red-400 font-bold bg-red-900/50 p-2 rounded-md">
                     <strong>SUNUCUYU YENİDEN BAŞLATIN (HAYATİ ÖNEMDE!):</strong> `.env` dosyasını oluşturduktan veya içeriğini değiştirdikten sonra, değişikliklerin Next.js tarafından algılanması için geliştirme sunucunuzu **KESİNLİKLE durdurup (Terminalde Ctrl+C yapıp) sonra tekrar `npm run dev` (veya `yarn dev`) komutuyla YENİDEN BAŞLATMANIZ ZORUNLUDUR.** Bu adımı atlarsanız, ortam değişkenleri yüklenmez ve "Gönderen bilgileri eksik" hatası alırsınız.
