@@ -14,14 +14,17 @@ import { differenceInMinutes, differenceInHours, format, addHours, setHours, set
 
 const LOCAL_STORAGE_POSTS_KEY = 'cosmosCuratorPosts';
 const LOCAL_STORAGE_EMAIL_RECIPIENT_KEY = 'emailRecipient_cosmosCurator';
+const LOCAL_STORAGE_TARGET_HOURS_KEY = 'cosmosCuratorTargetHours';
 const SESSION_STORAGE_AUTO_SENT_PREFIX = 'cosmosCuratorAutoSent_';
 const MAX_HISTORY_POSTS = 2;
-const TARGET_HOURS = [9, 12, 15, 18, 21];
+const DEFAULT_TARGET_HOURS = [9, 12, 15, 18, 21];
+
 
 export default function HomePage() {
   const [approvedPosts, setApprovedPosts] = useState<Post[]>([]);
   const [currentTime, setCurrentTime] = useState('');
   const [nextPostTimeInfo, setNextPostTimeInfo] = useState<{ time: string; remaining: string } | null>(null);
+  const [dynamicTargetHours, setDynamicTargetHours] = useState<number[]>([...DEFAULT_TARGET_HOURS].sort((a,b)=>a-b));
   const { toast } = useToast();
 
   useEffect(() => {
@@ -38,6 +41,24 @@ export default function HomePage() {
         setApprovedPosts([]);
       }
     }
+
+    const storedTargetHours = localStorage.getItem(LOCAL_STORAGE_TARGET_HOURS_KEY);
+    if (storedTargetHours) {
+        try {
+            const parsedHours = JSON.parse(storedTargetHours);
+            if (Array.isArray(parsedHours) && parsedHours.length > 0 && parsedHours.every(h => typeof h === 'number')) {
+                setDynamicTargetHours(parsedHours.sort((a,b) => a-b));
+            } else {
+                 setDynamicTargetHours([...DEFAULT_TARGET_HOURS].sort((a,b)=>a-b));
+            }
+        } catch (e) {
+            console.error("Kaydedilmiş hedef saatler ayrıştırılamadı, varsayılana dönülüyor:", e);
+            setDynamicTargetHours([...DEFAULT_TARGET_HOURS].sort((a,b)=>a-b));
+        }
+    } else {
+        setDynamicTargetHours([...DEFAULT_TARGET_HOURS].sort((a,b)=>a-b));
+    }
+
   }, []);
 
   useEffect(() => {
@@ -47,34 +68,34 @@ export default function HomePage() {
       updateNextPostTimeInfo(now);
     }, 1000);
 
-    updateNextPostTimeInfo(new Date());
+    updateNextPostTimeInfo(new Date()); // Initial call
 
     return () => clearInterval(timerId);
-  }, []);
+  }, [dynamicTargetHours]); // Re-run if target hours change
 
   const updateNextPostTimeInfo = (now: Date) => {
+    if (dynamicTargetHours.length === 0) {
+        setNextPostTimeInfo(null);
+        return;
+    }
     let nextTargetDateTime: Date | null = null;
+    const currentHour = getHours(now);
+    const currentMinute = getMinutes(now);
 
-    for (const hour of TARGET_HOURS) {
-      let potentialNextTime = setSeconds(setMinutes(setHours(now, hour), 0), 0);
-      if (isPast(potentialNextTime)) {
-        if (hour === TARGET_HOURS[TARGET_HOURS.length -1]) {
-            potentialNextTime = addHours(potentialNextTime, 24); 
-            potentialNextTime = setSeconds(setMinutes(setHours(potentialNextTime, TARGET_HOURS[0]),0),0);
-        } else {
-            continue; 
-        }
+    // Find the next target time for today
+    for (const hour of dynamicTargetHours) {
+      if (hour > currentHour || (hour === currentHour && 0 > currentMinute)) {
+        nextTargetDateTime = setSeconds(setMinutes(setHours(now, hour), 0), 0);
+        break;
       }
-      if (!nextTargetDateTime || potentialNextTime < nextTargetDateTime) {
-        nextTargetDateTime = potentialNextTime;
-      }
+    }
+
+    // If all today's target times have passed, find the first target time for tomorrow
+    if (!nextTargetDateTime) {
+      const firstHourOfNextDay = dynamicTargetHours[0];
+      nextTargetDateTime = addHours(setSeconds(setMinutes(setHours(now, firstHourOfNextDay), 0), 0), 24);
     }
     
-    if (!nextTargetDateTime || isPast(nextTargetDateTime)) {
-        let tomorrowFirstTarget = setSeconds(setMinutes(setHours(addHours(now, 24), TARGET_HOURS[0]), 0), 0);
-        nextTargetDateTime = tomorrowFirstTarget;
-    }
-
     if (nextTargetDateTime) {
       const hoursRemaining = differenceInHours(nextTargetDateTime, now);
       const minutesRemaining = differenceInMinutes(nextTargetDateTime, now) % 60;
@@ -83,7 +104,7 @@ export default function HomePage() {
         remaining: `${hoursRemaining} saat ${minutesRemaining} dakika sonra`
       });
     } else {
-      setNextPostTimeInfo(null);
+      setNextPostTimeInfo(null); // Should not happen if dynamicTargetHours is not empty
     }
   };
 
@@ -127,15 +148,15 @@ export default function HomePage() {
     };
 
     const checkAndTriggerAutoPost = async () => {
+      if (dynamicTargetHours.length === 0) {
+        return; // No target hours set
+      }
       const now = new Date();
       const currentHour = getHours(now);
       const currentMinute = getMinutes(now);
 
-      if (currentHour < TARGET_HOURS[0] || currentHour > TARGET_HOURS[TARGET_HOURS.length -1]+1) {
-        return;
-      }
-
-      for (const targetHour of TARGET_HOURS) {
+      // Check if it's time to post for any of the dynamic target hours
+      for (const targetHour of dynamicTargetHours) {
         if (currentHour === targetHour && currentMinute === 0) { 
           const slotKey = getSlotKey(targetHour);
           if (!sessionStorage.getItem(slotKey)) {
@@ -181,11 +202,18 @@ export default function HomePage() {
       }
     };
 
-    const intervalId = setInterval(checkAndTriggerAutoPost, 60000); 
-    checkAndTriggerAutoPost(); 
+    const intervalId = setInterval(checkAndTriggerAutoPost, 60000); // Check every minute
+    checkAndTriggerAutoPost(); // Initial check
 
     return () => clearInterval(intervalId);
-  }, [toast]);
+  }, [toast, dynamicTargetHours]); // Re-run if target hours change
+
+
+  const getTargetHoursString = () => {
+    if (dynamicTargetHours.length === 0) return "Hiçbir saat seçilmemiş. Otomatik gönderim devre dışı.";
+    return dynamicTargetHours.map(h => `${h.toString().padStart(2, '0')}:00`).join(', ');
+  };
+
 
   return (
     <main className="flex flex-col gap-4 p-4 md:gap-8 md:p-8 container mx-auto">
@@ -197,12 +225,18 @@ export default function HomePage() {
           <p className="text-muted-foreground">
             Yapay zeka destekli Instagram içerik oluşturma sürecinizi yönetin.
           </p>
-          {nextPostTimeInfo && (
+          {nextPostTimeInfo && dynamicTargetHours.length > 0 && (
             <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground p-2 rounded-md bg-card border border-border shadow-sm">
               <Timer className="h-4 w-4 text-accent" />
               <span>Sonraki otomatik gönderi: <strong>{nextPostTimeInfo.time}</strong> ({nextPostTimeInfo.remaining})</span>
             </div>
           )}
+           {dynamicTargetHours.length === 0 && (
+             <div className="mt-2 flex items-center gap-2 text-sm text-orange-400 p-2 rounded-md bg-orange-950 border border-orange-700 shadow-sm">
+                <AlertTriangle className="h-4 w-4" />
+                <span>Otomatik gönderi için Ayarlar'dan saat seçimi yapılmamış. Otomatik gönderim devre dışı.</span>
+            </div>
+           )}
         </div>
         {currentTime && (
           <div className="flex items-center gap-2 p-2 border rounded-md bg-card text-card-foreground shadow-sm">
@@ -217,9 +251,9 @@ export default function HomePage() {
         <AlertTriangle className="h-5 w-5 text-blue-300" />
         <AlertTitle className="text-blue-200 font-bold">Otomatik Gönderi Oluşturma ve E-posta Bildirimi Aktif!</AlertTitle>
         <AlertDescription className="text-blue-200/90 space-y-1">
-          <p>Bu sayfa tarayıcıda açık olduğu sürece, sistem belirlenen saatlerde ({TARGET_HOURS.join(', ')}) otomatik olarak bir gönderi içeriği oluşturup, Ayarlar sayfasında belirttiğiniz e-posta adresine gönderecektir.</p>
+          <p>Bu sayfa tarayıcıda açık olduğu sürece, sistem belirlenen saatlerde ({getTargetHoursString()}) otomatik olarak bir gönderi içeriği oluşturup, Ayarlar sayfasında belirttiğiniz e-posta adresine gönderecektir.</p>
           <p className="font-semibold">Önemli: Bu özellik, tarayıcınızın bu sekmeyi açık ve aktif tutmasına bağlıdır. Tarayıcıyı veya bu sekmeyi kapatırsanız otomatik gönderim durur.</p>
-          <p>Lütfen alıcı e-posta adresinizin Ayarlar sayfasından doğru bir şekilde kaydedildiğinden emin olun.</p>
+          <p>Lütfen alıcı e-posta adresinizin Ayarlar sayfasından doğru bir şekilde kaydedildiğinden emin olun. Otomatik gönderi zamanlarını da Ayarlar sayfasından özelleştirebilirsiniz.</p>
         </AlertDescription>
       </Alert>
 
@@ -232,3 +266,5 @@ export default function HomePage() {
     </main>
   );
 }
+
+    
